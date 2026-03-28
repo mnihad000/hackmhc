@@ -9,4 +9,4 @@ SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
 # Document categories
-CATEGORIES = ["finance", "education", "medical", "identity", "legal", "other"]
+CATEGORIES = ["finance", "education", "medical", "Misc"]
