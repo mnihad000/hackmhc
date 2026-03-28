@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+supabase
+PyMuPDF
+openai
+langchain-text-splitters
+python-jose[cryptography]
+python-dotenv
+httpx
