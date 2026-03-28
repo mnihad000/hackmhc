@@ -52,6 +52,18 @@ backend/
 | GET | /api/chat/history | user | Past messages |
 | POST | /api/autofill | user | Field names -> matched values |
 
+## Shared contract
+
+Autofill request, response, and feedback payloads are defined in:
+- `../shared/autofill/CONTRACT.md`
+- `../shared/autofill/schemas/autofill-request.schema.json`
+- `../shared/autofill/schemas/autofill-response.schema.json`
+- `../shared/autofill/schemas/autofill-feedback.schema.json`
+
+Backend note:
+- pgvector, RAG, and learned mappings are backend implementation details.
+- They must not change the public autofill response shape without a contract update.
+
 ## PDF Pipeline Flow
 1. **Extract** -- PyMuPDF `page.get_text()` per page
 2. **Chunk** -- RecursiveCharacterTextSplitter (500 tokens, 50 overlap)

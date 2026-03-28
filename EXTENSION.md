@@ -44,28 +44,16 @@ The MVP goal is to reduce repetitive typing while keeping user trust high.
 
 ## API alignment (v1 contract)
 
-### `POST /api/autofill`
+Source of truth:
+- `shared/autofill/CONTRACT.md`
+- `shared/autofill/schemas/autofill-request.schema.json`
+- `shared/autofill/schemas/autofill-response.schema.json`
+- `shared/autofill/schemas/autofill-feedback.schema.json`
 
-Input:
-- `fields`: array of normalized field descriptors
-
-Output:
-- `suggestions`: array of objects:
-  - `field_name`
-  - `value`
-  - `confidence` (0.0-1.0)
-  - `sourceType` (canonical/rag/inferred)
-  - `sourceRef`
-  - `reason`
-
-### `POST /api/autofill/feedback`
-
-Input:
-- accepted/rejected/edited suggestions
-- unseen field + manual value captures (for adaptive learning)
-
-Output:
-- acknowledgement
+Notes:
+- The extension depends on the contract, not on backend internals.
+- Vector DB / RAG behavior is backend-owned and must not change the response shape.
+- Every suggestion must be tied to a stable `field_id` and `suggestion_id`.
 
 ## Confidence policy (initial)
 
@@ -110,4 +98,5 @@ Guardrail:
 - Contract-first changes: schema updates are versioned.
 - No breaking API changes without extension-team review.
 - Weekly sync to keep extension/backend/frontend aligned.
+- `shared/` is the cross-team contract folder; `extension/shared/` is extension runtime code only.
 

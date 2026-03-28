@@ -1,0 +1,42 @@
+{
+  "contract_version": "familyos.autofill.v1",
+  "request_id": "req_9f6f6704",
+  "page_url": "https://school.example.com/enrollment",
+  "page_title": "Student Enrollment Form",
+  "fields": [
+    {
+      "field_id": "guardian_first_name|0",
+      "field_name": "guardian_first_name",
+      "label": "Parent First Name",
+      "type": "text",
+      "placeholder": "",
+      "section": "Guardian Information",
+      "normalized_key": "first_name",
+      "context": "parent first name guardian information guardian first name",
+      "required": true,
+      "autocomplete": "given-name"
+    },
+    {
+      "field_id": "state|1",
+      "field_name": "state",
+      "label": "State",
+      "type": "select",
+      "placeholder": "",
+      "section": "Home Address",
+      "normalized_key": "state",
+      "context": "state home address state",
+      "required": true,
+      "autocomplete": "address-level1",
+      "options": [
+        {
+          "label": "Massachusetts",
+          "value": "MA"
+        },
+        {
+          "label": "New Hampshire",
+          "value": "NH"
+        }
+      ]
+    }
+  ]
+}

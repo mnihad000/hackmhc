@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://familyos.dev/schemas/autofill-response.schema.json",
+  "title": "FamilyOS Autofill Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "request_id", "suggestions"],
+  "properties": {
+    "contract_version": {
+      "const": "familyos.autofill.v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/suggestion"
+      }
+    }
+  },
+  "$defs": {
+    "suggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suggestion_id",
+        "field_id",
+        "field_name",
+        "value",
+        "confidence",
+        "confidence_bucket",
+        "source_type",
+        "profile_key",
+        "reason",
+        "fill_strategy",
+        "requires_review"
+      ],
+      "properties": {
+        "suggestion_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence_bucket": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "source_type": {
+          "type": "string",
+          "enum": ["canonical", "rag", "inferred", "learned"]
+        },
+        "source_ref": {
+          "type": ["string", "null"]
+        },
+        "profile_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string"
+        },
+        "fill_strategy": {
+          "type": "string",
+          "enum": [
+            "text",
+            "select_by_value",
+            "select_by_label",
+            "check",
+            "uncheck",
+            "skip"
+          ]
+        },
+        "requires_review": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

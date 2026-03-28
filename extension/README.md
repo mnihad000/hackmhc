@@ -30,28 +30,16 @@ Help users fill repetitive form fields using FamilyOS data while avoiding incorr
 
 ## Backend contract needed
 
-### `POST /api/autofill`
+Cross-team source of truth:
+- `../shared/autofill/CONTRACT.md`
+- `../shared/autofill/schemas/autofill-request.schema.json`
+- `../shared/autofill/schemas/autofill-response.schema.json`
+- `../shared/autofill/schemas/autofill-feedback.schema.json`
 
-Request:
-- `fields`: normalized field descriptors from content script.
-
-Response:
-- `suggestions[]` with:
-  - `field_name`
-  - `value`
-  - `confidence`
-  - `sourceType`
-  - `sourceRef`
-  - `reason`
-
-### `POST /api/autofill/feedback`
-
-Request:
-- accepted/rejected/edited suggestions
-- unseen field + manual value captures
-
-Response:
-- acknowledgement
+Important boundary:
+- `extension/shared/` contains extension runtime helpers.
+- `../shared/` contains the contract with backend and frontend.
+- The extension should rely on contract fields, not on vector DB or retrieval internals.
 
 ## Planned extension structure
 
@@ -80,6 +68,20 @@ extension/
 4. Integrate `/api/autofill` and confidence gating.
 5. Implement feedback events and `/api/autofill/feedback`.
 6. Validate on target forms (school, healthcare, tax, contact).
+
+## TDD status
+
+- Baseline unit tests are in `tests/unit/`:
+  - `field_normalization.test.js`
+  - `confidence.test.js`
+  - `feedback_queue.test.js`
+- Mock fixtures are in `tests/fixtures/`:
+  - `forms/` (12 HTML fixtures)
+  - `profiles/` (canonical profile variants)
+  - `autofill/` (mocked backend responses)
+  - `feedback/` (mocked outcome payloads)
+- Run tests:
+  - `npm test`
 
 ## Team alignment notes
 
