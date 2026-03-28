@@ -11,27 +11,62 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 @router.post("/upload")
 async def upload_document(
-    file: UploadFile = File(...),
+    file: UploadFile | None = File(None),
+    files: list[UploadFile] | None = File(None),
     user: dict = Depends(get_current_user),
 ):
-    """Upload a PDF and run the processing pipeline."""
+    """Upload one or more PDFs and store metadata."""
     if user["role"] == "child":
         raise HTTPException(status_code=403, detail="Children cannot upload documents")
 
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+    upload_files: list[UploadFile] = []
+    if file is not None:
+        upload_files.append(file)
+    if files:
+        upload_files.extend(files)
+    if not upload_files:
+        raise HTTPException(
+            status_code=400,
+            detail="No files provided. Send 'file' or 'files'.",
+        )
 
-    file_bytes = await file.read()
-    if len(file_bytes) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File exceeds 10MB limit")
+    uploaded = []
+    failed = []
+    for current_file in upload_files:
+        filename = current_file.filename or "unnamed.pdf"
+        if not filename.lower().endswith(".pdf"):
+            failed.append({"filename": filename, "error": "Only PDF files are accepted"})
+            continue
 
-    result = await process_pdf(
-        file_bytes=file_bytes,
-        filename=file.filename,
-        family_id=user["family_id"],
-        user_id=user["user_id"],
-    )
-    return result
+        file_bytes = await current_file.read()
+        if len(file_bytes) > MAX_FILE_SIZE:
+            failed.append({"filename": filename, "error": "File exceeds 10MB limit"})
+            continue
+
+        try:
+            result = await process_pdf(
+                file_bytes=file_bytes,
+                filename=filename,
+                family_id=user["family_id"],
+                user_id=user["user_id"],
+            )
+            uploaded.append(result)
+        except Exception:
+            failed.append({"filename": filename, "error": "Failed to process file"})
+
+    response = {
+        "uploaded": uploaded,
+        "failed": failed,
+        "total": len(upload_files),
+        "success_count": len(uploaded),
+        "failure_count": len(failed),
+    }
+
+    # Backward compatibility for current single-file frontend behavior.
+    if len(upload_files) == 1 and len(uploaded) == 1 and not failed:
+        response["category"] = uploaded[0].get("category")
+
+    return response
 
 
 @router.get("")
@@ -98,13 +133,8 @@ async def delete_document(
     if not doc.data:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Delete chunks (cascade should handle this, but be explicit)
     supabase.table("document_chunks").delete().eq("document_id", document_id).execute()
-
-    # Delete document record
     supabase.table("documents").delete().eq("id", document_id).execute()
-
-    # Delete from storage
     supabase.storage.from_("documents").remove([doc.data["storage_path"]])
 
     return {"message": "Document deleted"}

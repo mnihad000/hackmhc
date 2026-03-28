@@ -13,6 +13,9 @@ class UpdateRoleRequest(BaseModel):
 @router.get("")
 async def get_family(user: dict = Depends(get_current_user)):
     """Get family info and member list."""
+    if not user.get("family_id"):
+        raise HTTPException(status_code=404, detail="User is not in a family")
+
     supabase = get_supabase()
 
     family = (
@@ -43,7 +46,8 @@ async def update_member_role(
     user: dict = Depends(require_admin),
 ):
     """Change a family member's role (admin only)."""
-    if req.role not in ("admin", "member", "child"):
+    role = req.role.strip().lower()
+    if role not in ("admin", "member", "child"):
         raise HTTPException(status_code=400, detail="Invalid role")
 
     if member_id == user["user_id"]:
@@ -63,8 +67,8 @@ async def update_member_role(
     if not member.data or member.data["family_id"] != user["family_id"]:
         raise HTTPException(status_code=404, detail="Member not found in your family")
 
-    supabase.table("profiles").update({"role": req.role}).eq("id", member_id).execute()
-    return {"message": f"Role updated to {req.role}"}
+    supabase.table("profiles").update({"role": role}).eq("id", member_id).execute()
+    return {"message": f"Role updated to {role}"}
 
 
 @router.delete("/members/{member_id}")
