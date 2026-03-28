@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from middleware.auth import get_current_user
-from services.rag import autofill_query
+from rag.service import autofill_query
 
 router = APIRouter(prefix="/api/autofill", tags=["autofill"])
 
