@@ -1,0 +1,21 @@
+{
+  "family_id": "fam_conflict",
+  "members": [
+    {
+      "role": "guardian",
+      "first_name": "Sam",
+      "last_name": "Lee",
+      "email": "sam.old@example.com",
+      "phone": "+1 555 000 0000",
+      "address_line_1": "44 Old Lane"
+    }
+  ],
+  "updates": [
+    {
+      "email": "sam.lee@example.com",
+      "phone": "+1 555 303 4444",
+      "address_line_1": "88 New Street",
+      "source": "user_verified"
+    }
+  ]
+}

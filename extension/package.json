@@ -1,0 +1,9 @@
+{
+  "name": "familyos-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FamilyOS Chrome extension (precision-first autofill)",
+  "scripts": {
+    "test": "node --test tests/unit/*.test.js"
+  }
+}

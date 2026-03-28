@@ -1,0 +1,425 @@
+{
+  "contact_form_basic.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_contact_name",
+        "field_id": "name|0",
+        "field_name": "name",
+        "value": "Amina Diallo",
+        "confidence": 0.88,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.primary_contact",
+        "profile_key": "guardian_1.full_name",
+        "reason": "Primary contact name from canonical family profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_contact_email",
+        "field_id": "email|1",
+        "field_name": "email",
+        "value": "amina.diallo@example.com",
+        "confidence": 0.96,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.email",
+        "profile_key": "guardian_1.email",
+        "reason": "Verified guardian email from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_contact_phone",
+        "field_id": "phone|2",
+        "field_name": "phone",
+        "value": "+1 555 303 4444",
+        "confidence": 0.78,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.phone",
+        "profile_key": "guardian_1.phone",
+        "reason": "Validated phone number from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "school_enrollment_basic.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_school_guardian_first",
+        "field_id": "guardian_first_name|0",
+        "field_name": "guardian_first_name",
+        "value": "Maria",
+        "confidence": 0.96,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.first_name",
+        "profile_key": "guardian_1.first_name",
+        "reason": "Exact guardian first-name match from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_school_guardian_last",
+        "field_id": "guardian_last_name|1",
+        "field_name": "guardian_last_name",
+        "value": "Diallo",
+        "confidence": 0.95,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.last_name",
+        "profile_key": "guardian_1.last_name",
+        "reason": "Exact guardian last-name match from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_school_guardian_email",
+        "field_id": "guardian_email|2",
+        "field_name": "guardian_email",
+        "value": "maria.diallo@example.com",
+        "confidence": 0.94,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.email",
+        "profile_key": "guardian_1.email",
+        "reason": "Verified guardian email from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "school_enrollment_split_name.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_student_first_name",
+        "field_id": "student_first_name|0",
+        "field_name": "student_first_name",
+        "value": "Elena",
+        "confidence": 0.93,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.student_1.first_name",
+        "profile_key": "student_1.first_name",
+        "reason": "Student first name from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_student_middle_initial",
+        "field_id": "student_middle_initial|1",
+        "field_name": "student_middle_initial",
+        "value": "M",
+        "confidence": 0.72,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.student_1.middle_name",
+        "profile_key": "student_1.middle_name",
+        "reason": "Derived middle initial from student middle name",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_student_last_name",
+        "field_id": "student_last_name|2",
+        "field_name": "student_last_name",
+        "value": "Diallo",
+        "confidence": 0.93,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.student_1.last_name",
+        "profile_key": "student_1.last_name",
+        "reason": "Student last name from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "healthcare_intake_basic.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_patient_name",
+        "field_id": "patient_name|0",
+        "field_name": "patient_name",
+        "value": "Elena Diallo",
+        "confidence": 0.82,
+        "confidence_bucket": "medium",
+        "source_type": "learned",
+        "source_ref": "mapping:patient.full_name",
+        "profile_key": "student_1.full_name",
+        "reason": "Patient full name matched the dependent medical profile",
+        "fill_strategy": "text",
+        "requires_review": true
+      },
+      {
+        "suggestion_id": "sug_emergency_phone",
+        "field_id": "emergency_phone|1",
+        "field_name": "emergency_phone",
+        "value": "+1 555 303 4444",
+        "confidence": 0.77,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.phone",
+        "profile_key": "guardian_1.phone",
+        "reason": "Guardian phone reused as emergency contact number",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "healthcare_insurance_member_fields.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_member_id",
+        "field_id": "member_id|0",
+        "field_name": "member_id",
+        "value": "BCBS-4381229",
+        "confidence": 0.74,
+        "confidence_bucket": "medium",
+        "source_type": "rag",
+        "source_ref": "insurance_card.pdf",
+        "profile_key": "insurance.member_id",
+        "reason": "Insurance member ID extracted from uploaded card",
+        "fill_strategy": "text",
+        "requires_review": true
+      },
+      {
+        "suggestion_id": "sug_group_number",
+        "field_id": "group_number|1",
+        "field_name": "group_number",
+        "value": "GRP-80817",
+        "confidence": 0.73,
+        "confidence_bucket": "medium",
+        "source_type": "rag",
+        "source_ref": "insurance_card.pdf",
+        "profile_key": "insurance.group_number",
+        "reason": "Insurance group number extracted from uploaded card",
+        "fill_strategy": "text",
+        "requires_review": true
+      }
+    ]
+  },
+  "tax_w4_like.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_legal_name",
+        "field_id": "legal_name|0",
+        "field_name": "legal_name",
+        "value": "Maria Diallo",
+        "confidence": 0.79,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.legal_name",
+        "profile_key": "guardian_1.legal_name",
+        "reason": "Legal name from canonical profile",
+        "fill_strategy": "text",
+        "requires_review": true
+      },
+      {
+        "suggestion_id": "sug_ssn_last4",
+        "field_id": "ssn_last4|1",
+        "field_name": "ssn_last4",
+        "value": "4821",
+        "confidence": 0.7,
+        "confidence_bucket": "medium",
+        "source_type": "learned",
+        "source_ref": "mapping:identity.ssn_last4",
+        "profile_key": "identity.ssn_last4",
+        "reason": "Sensitive identity field requires explicit review",
+        "fill_strategy": "text",
+        "requires_review": true
+      },
+      {
+        "suggestion_id": "sug_home_address",
+        "field_id": "home_address|2",
+        "field_name": "home_address",
+        "value": "88 New Street",
+        "confidence": 0.76,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.home_address.line1",
+        "profile_key": "home_address.line1",
+        "reason": "Home address from canonical family profile",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "required_dropdown_radio_checkbox.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_state_select",
+        "field_id": "state_select|0",
+        "field_name": "state_select",
+        "value": "MA",
+        "confidence": 0.92,
+        "confidence_bucket": "high",
+        "source_type": "learned",
+        "source_ref": "mapping:home_address.state",
+        "profile_key": "home_address.state",
+        "reason": "Mapped state against current select options",
+        "fill_strategy": "select_by_value",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_contact_method",
+        "field_id": "contact_method|1",
+        "field_name": "contact_method",
+        "value": "email",
+        "confidence": 0.83,
+        "confidence_bucket": "medium",
+        "source_type": "learned",
+        "source_ref": "mapping:preferred_contact_method",
+        "profile_key": "guardian_1.preferred_contact_method",
+        "reason": "Preferred contact method matched the radio group",
+        "fill_strategy": "check",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_terms",
+        "field_id": "terms|2",
+        "field_name": "terms",
+        "value": "true",
+        "confidence": 0.68,
+        "confidence_bucket": "medium",
+        "source_type": "inferred",
+        "source_ref": null,
+        "profile_key": "form_consent.terms",
+        "reason": "Consent checkbox inferred for fixture testing only",
+        "fill_strategy": "check",
+        "requires_review": true
+      }
+    ]
+  },
+  "react_controlled_inputs.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_react_email",
+        "field_id": "react_email|0",
+        "field_name": "react_email",
+        "value": "guardian@example.com",
+        "confidence": 0.9,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.email",
+        "profile_key": "guardian_1.email",
+        "reason": "Controlled email input should receive input and change events",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_react_notes",
+        "field_id": "react_notes|1",
+        "field_name": "react_notes",
+        "value": "Prefers email contact after 3pm.",
+        "confidence": 0.72,
+        "confidence_bucket": "medium",
+        "source_type": "learned",
+        "source_ref": "mapping:family.preferences.notes",
+        "profile_key": "family.preferences.notes",
+        "reason": "Saved family preference note",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "ambiguous_labels_only.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_ambiguous_name",
+        "field_id": "name|0",
+        "field_name": "name",
+        "value": "Amina Diallo",
+        "confidence": 0.67,
+        "confidence_bucket": "medium",
+        "source_type": "inferred",
+        "source_ref": null,
+        "profile_key": "guardian_1.full_name",
+        "reason": "Ambiguous label resolved conservatively to full name",
+        "fill_strategy": "text",
+        "requires_review": true
+      }
+    ]
+  },
+  "weird_field_names_legacy.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_legacy_dob",
+        "field_id": "ctl00$Main$txtDOB|0",
+        "field_name": "ctl00$Main$txtDOB",
+        "value": "2014-09-18",
+        "confidence": 0.72,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.student_1.dob",
+        "profile_key": "student_1.dob",
+        "reason": "Date of birth resolved from label, not raw field name",
+        "fill_strategy": "text",
+        "requires_review": true
+      },
+      {
+        "suggestion_id": "sug_legacy_phone",
+        "field_id": "ctl00$Main$txtPhone|1",
+        "field_name": "ctl00$Main$txtPhone",
+        "value": "+1 555 303 4444",
+        "confidence": 0.79,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.phone",
+        "profile_key": "guardian_1.phone",
+        "reason": "Phone number resolved from label context",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "missing_labels_placeholder_only.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": [
+      {
+        "suggestion_id": "sug_placeholder_email",
+        "field_id": "guardian_email|0",
+        "field_name": "guardian_email",
+        "value": "guardian@example.com",
+        "confidence": 0.9,
+        "confidence_bucket": "high",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.email",
+        "profile_key": "guardian_1.email",
+        "reason": "Placeholder text was enough to identify guardian email",
+        "fill_strategy": "text",
+        "requires_review": false
+      },
+      {
+        "suggestion_id": "sug_placeholder_phone",
+        "field_id": "guardian_phone|1",
+        "field_name": "guardian_phone",
+        "value": "+1 555 303 4444",
+        "confidence": 0.78,
+        "confidence_bucket": "medium",
+        "source_type": "canonical",
+        "source_ref": "family_profile.guardian_1.phone",
+        "profile_key": "guardian_1.phone",
+        "reason": "Placeholder text was enough to identify guardian phone",
+        "fill_strategy": "text",
+        "requires_review": false
+      }
+    ]
+  },
+  "iframe_or_unsupported_context.html": {
+    "contract_version": "familyos.autofill.v1",
+    "suggestions": []
+  }
+}
