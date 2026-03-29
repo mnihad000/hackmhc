@@ -1,8 +1,8 @@
 let latestFields = [];
 let latestSuggestions = [];
-let latestUsedMockFixture = null;
 let scanInFlight = false;
 const DEFAULT_API_BASE = "http://localhost:8000";
+const MOCK_AUTOFILL_ENABLED_KEY = "mock_autofill_enabled";
 const CONTENT_SCRIPT_FILES = [
   "shared/field_normalization.js",
   "shared/confidence.js",
@@ -16,11 +16,74 @@ let authState = {
 function setStatus(text, isError = false) {
   const status = document.getElementById("status");
   status.textContent = text;
-  status.style.color = isError ? "#dc2626" : "#0f172a";
+  status.style.color = isError ? "#b42318" : "#1e3a5f";
 }
 
 function fieldForSuggestion(suggestion) {
   return latestFields.find((field) => field.field_id === suggestion.field_id) || null;
+}
+
+function cleanDisplayText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\(required\)\s*$/i, "")
+    .replace(/\s*[:*]+\s*$/g, "")
+    .trim();
+}
+
+function titleCaseToken(value) {
+  return String(value || "")
+    .split(/[_\-\s]+/)
+    .filter(Boolean)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function shortFieldLabel(item, field) {
+  const profileKey = String(item?.profile_key || field?.normalized_key || "")
+    .trim()
+    .split(".")
+    .pop();
+  const mappedProfileLabels = {
+    first_name: "First Name",
+    middle_initial: "Middle Initial",
+    last_name: "Last Name",
+    full_name: "Full Name",
+    email: "Email",
+    phone: "Phone",
+    phone_home: "Home Phone",
+    phone_work: "Work Phone",
+    address_line_1: "Address Line 1",
+    address_line_2: "Address Line 2",
+    city: "City",
+    state: "State",
+    zip: "ZIP Code",
+    country: "Country",
+    company: "Company",
+    position: "Job Title",
+    username: "Username",
+    website: "Website",
+    dob: "Date of Birth",
+    ssn: "SSN",
+    driver_license: "Driver License",
+    income: "Income"
+  };
+
+  if (profileKey && mappedProfileLabels[profileKey]) {
+    return mappedProfileLabels[profileKey];
+  }
+
+  const label = cleanDisplayText(field?.label || item?.field_label);
+  if (label) {
+    return label;
+  }
+
+  const normalizedKey = cleanDisplayText(field?.normalized_key);
+  if (normalizedKey) {
+    return titleCaseToken(normalizedKey);
+  }
+
+  return titleCaseToken(item?.field_name || "Field");
 }
 
 function updateApplyButtonState() {
@@ -44,7 +107,6 @@ function renderSuggestions(items) {
 
   items.forEach((item) => {
     const field = fieldForSuggestion(item);
-    const score = Number(item.confidence || 0);
     const li = document.createElement("li");
     if (item.requires_review) {
       li.classList.add("requires-review");
@@ -58,32 +120,20 @@ function renderSuggestions(items) {
 
     const body = document.createElement("div");
     const heading = document.createElement("strong");
-    heading.textContent = field?.label || item.field_label || item.field_name;
+    heading.textContent = shortFieldLabel(item, field);
 
     const value = document.createElement("div");
     value.className = "value";
     value.textContent = item.value || "(empty)";
 
-    const source = document.createElement("div");
-    source.className = "meta";
-    source.textContent = `${item.confidence_bucket} ${score.toFixed(2)} | ${item.source_type}`;
-
     body.appendChild(heading);
     body.appendChild(value);
-    body.appendChild(source);
 
     if (field?.section) {
       const section = document.createElement("div");
-      section.className = "meta";
-      section.textContent = field.section;
+      section.className = "meta context-chip";
+      section.textContent = cleanDisplayText(field.section);
       body.appendChild(section);
-    }
-
-    if (item.reason) {
-      const reason = document.createElement("div");
-      reason.className = "meta";
-      reason.textContent = item.reason;
-      body.appendChild(reason);
     }
 
     if (item.requires_review) {
@@ -174,12 +224,6 @@ async function extractFieldsFromTab(tab) {
   }
 }
 
-async function loadMockModeSetting() {
-  const key = FamilyOSMockAutofill.MOCK_AUTOFILL_ENABLED_KEY;
-  const data = await chrome.storage.local.get(key);
-  document.getElementById("mock-mode-toggle").checked = Boolean(data[key]);
-}
-
 async function loadConnectionSettings() {
   const data = await chrome.storage.local.get(["api_base", "token", "auth_user_email"]);
   document.getElementById("api-base-input").value = data.api_base || DEFAULT_API_BASE;
@@ -190,9 +234,8 @@ async function loadConnectionSettings() {
   renderAuthState();
 }
 
-async function persistMockModeSetting(enabled) {
-  const key = FamilyOSMockAutofill.MOCK_AUTOFILL_ENABLED_KEY;
-  await chrome.storage.local.set({ [key]: Boolean(enabled) });
+async function ensureMockModeDefault() {
+  await chrome.storage.local.set({ [MOCK_AUTOFILL_ENABLED_KEY]: true });
 }
 
 async function persistConnectionSettings() {
@@ -270,21 +313,6 @@ async function signOut() {
   renderAuthState();
 }
 
-function mockModeEnabled() {
-  return Boolean(document.getElementById("mock-mode-toggle")?.checked);
-}
-
-function suggestionSourceLabel(mockMeta) {
-  if (!mockMeta) return null;
-  if (mockMeta.mode === "fixture" && mockMeta.fixture_name) {
-    return mockMeta.fixture_name;
-  }
-  if (mockMeta.mode === "demo_profile") {
-    return "demo profile";
-  }
-  return null;
-}
-
 async function flushQueuedFeedback() {
   const batch = await FamilyOSFeedbackQueue.peekBatch();
   if (!batch.length) return;
@@ -318,14 +346,6 @@ async function scanAndFetchSuggestions() {
   if (scanInFlight) return;
   scanInFlight = true;
 
-  if (!mockModeEnabled() && !authState.token) {
-    latestSuggestions = [];
-    renderSuggestions([]);
-    setStatus("Sign in to fetch live suggestions, or enable demo mocks.", true);
-    scanInFlight = false;
-    return;
-  }
-
   setStatus("Scanning fields...");
   try {
     const tab = await getActiveTab();
@@ -349,24 +369,15 @@ async function scanAndFetchSuggestions() {
       request
     });
     if (!apiResponse.ok) {
-      const baseMessage = apiResponse.error || "Failed to fetch suggestions.";
-      throw new Error(
-        mockModeEnabled()
-          ? baseMessage
-          : `${baseMessage} Enable demo mocks or connect the backend.`
-      );
+      throw new Error(apiResponse.error || "Failed to fetch suggestions.");
     }
 
-    const mockSource = suggestionSourceLabel(apiResponse.payload?._mock);
-    latestUsedMockFixture = mockSource;
     latestSuggestions = FamilyOSAutofillRuntime.normalizeSuggestionsResponse(apiResponse.payload, latestFields);
     renderSuggestions(latestSuggestions);
     await syncFeedbackTracking(tab);
     setStatus(
       latestSuggestions.length
-        ? latestUsedMockFixture
-          ? `Loaded ${latestSuggestions.length} suggestion(s) from ${latestUsedMockFixture}.`
-          : `Loaded ${latestSuggestions.length} suggestion(s).`
+        ? `Loaded ${latestSuggestions.length} suggestion(s).`
         : "No confident suggestions found for this form."
     );
   } finally {
@@ -438,21 +449,6 @@ document.getElementById("suggestion-list").addEventListener("change", () => {
   updateApplyButtonState();
 });
 
-document.getElementById("mock-mode-toggle").addEventListener("change", async (event) => {
-  try {
-    await persistMockModeSetting(event.target.checked);
-    setStatus(
-      event.target.checked
-        ? "Demo mock mode enabled."
-        : "Demo mock mode disabled."
-    );
-    await scanAndFetchSuggestions();
-  } catch (error) {
-    event.target.checked = !event.target.checked;
-    setStatus(error.message, true);
-  }
-});
-
 document.getElementById("auth-form").addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -491,7 +487,7 @@ document.getElementById("save-settings-btn").addEventListener("click", async () 
 });
 
 Promise.all([
-  loadMockModeSetting(),
+  ensureMockModeDefault(),
   loadConnectionSettings(),
   flushQueuedFeedback().catch(() => {})
 ])

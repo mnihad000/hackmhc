@@ -9,11 +9,11 @@
   <body>
     <main class="container">
       <h1>FamilyOS Autofill</h1>
-      <p class="subtitle">Precision-first autofill</p>
+      <p class="subtitle">Review suggestions, then fill the form in one pass.</p>
 
       <section id="auth-signed-out" class="auth-card">
         <h2 class="auth-title">Sign in to your family account</h2>
-        <p class="auth-copy">Use the same email and password as the FamilyOS web app.</p>
+        <p class="auth-copy">Use the same email and password as the FamilyOS web app when you want to test live suggestions.</p>
         <form id="auth-form" class="auth-form">
           <input
             id="email-input"
@@ -67,18 +67,10 @@
               <button id="save-settings-btn" class="btn" type="button">Save API base</button>
             </div>
             <p class="settings-help">
-              Demo mocks do not need backend auth. For live backend autofill, sign in above and keep the API base pointed at your backend.
+              Keep this pointed at your backend if you want to test the live autofill API.
             </p>
           </div>
         </details>
-      </section>
-
-      <section class="mock-panel">
-        <label class="mock-toggle">
-          <input id="mock-mode-toggle" type="checkbox" />
-          <span>Use demo mocks</span>
-        </label>
-        <p class="mock-help">Works on local fixtures and live forms without the backend.</p>
       </section>
 
       <section>
@@ -92,7 +84,6 @@
     <script src="../shared/confidence.js"></script>
     <script src="../shared/autofill_runtime.js"></script>
     <script src="../shared/feedback_queue.js"></script>
-    <script src="../shared/mock_autofill.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
