@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { UploadCloud } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 interface UploadPanelProps {
@@ -101,7 +102,8 @@ export default function UploadPanel({ token, onUploadComplete }: UploadPanelProp
         className={`flex h-[62vh] min-h-[420px] w-full cursor-pointer items-center justify-center rounded-3xl border-2 border-dashed ${panelClass}`}
       >
         <input {...dropzone.getInputProps()} />
-        <div className="text-center text-zinc-900">
+        <div className="flex flex-col items-center text-center text-zinc-900">
+          <UploadCloud size={56} className="mb-4 text-slate-400" />
           <p className="text-5xl font-semibold leading-none">Upload File</p>
           <p className="mt-3 text-sm text-slate-600">Drag and drop PDFs or click to upload</p>
         </div>
