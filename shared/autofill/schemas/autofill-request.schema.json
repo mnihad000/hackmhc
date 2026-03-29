@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://familyos.dev/schemas/autofill-request.schema.json",
+  "title": "FamilyOS Autofill Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "request_id", "page_url", "fields"],
+  "properties": {
+    "contract_version": {
+      "const": "familyos.autofill.v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "page_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "page_title": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/fieldDescriptor"
+      }
+    }
+  },
+  "$defs": {
+    "fieldOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value"],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "fieldDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field_id",
+        "field_name",
+        "label",
+        "type",
+        "placeholder",
+        "section",
+        "normalized_key",
+        "context",
+        "required"
+      ],
+      "properties": {
+        "field_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "normalized_key": {
+          "type": "string"
+        },
+        "context": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "autocomplete": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fieldOption"
+          }
+        }
+      }
+    }
+  }
+}

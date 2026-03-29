@@ -1,0 +1,22 @@
+{
+  "suggestions": [
+    {
+      "field_name": "first_name",
+      "value": "Amina",
+      "confidence": 0.93,
+      "sourceType": "canonical",
+      "reason": "exact_profile_match",
+      "normalized_key": "first_name",
+      "semantic_score": 0.95
+    },
+    {
+      "field_name": "email",
+      "value": "amina.diallo@example.com",
+      "confidence": 0.97,
+      "sourceType": "canonical",
+      "reason": "exact_profile_match",
+      "normalized_key": "email",
+      "semantic_score": 0.98
+    }
+  ]
+}

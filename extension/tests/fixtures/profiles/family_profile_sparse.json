@@ -1,0 +1,11 @@
+{
+  "family_id": "fam_sparse",
+  "members": [
+    {
+      "role": "guardian",
+      "first_name": "Alex",
+      "last_name": "Kim",
+      "email": "alex.kim@example.com"
+    }
+  ]
+}

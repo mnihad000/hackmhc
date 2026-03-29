@@ -1,0 +1,10 @@
+{
+  "events": [
+    {
+      "type": "apply_result",
+      "selected_count": 4,
+      "filled_count": 4,
+      "result": "accept_all"
+    }
+  ]
+}

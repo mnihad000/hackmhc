@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from typing import Optional
 from middleware.auth import get_current_user, require_admin
 from services.pdf_pipeline import process_pdf
 from services.supabase_client import get_supabase
@@ -11,8 +12,8 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 @router.post("/upload")
 async def upload_document(
-    file: UploadFile | None = File(None),
-    files: list[UploadFile] | None = File(None),
+    file: Optional[UploadFile] = File(None),
+    files: Optional[list[UploadFile]] = File(None),
     user: dict = Depends(get_current_user),
 ):
     """Upload one or more PDFs and store metadata."""
@@ -71,14 +72,14 @@ async def upload_document(
 
 @router.get("")
 async def list_documents(
-    category: str | None = Query(None),
+    category: Optional[str] = Query(None),
     user: dict = Depends(get_current_user),
 ):
     """List all documents for the user's family, optionally filtered by category."""
     supabase = get_supabase()
     query = (
         supabase.table("documents")
-        .select("id, filename, category, page_count, created_at, uploaded_by, profiles(display_name)")
+        .select("id, filename, category, page_count, created_at, uploaded_by, storage_path, profiles(display_name)")
         .eq("family_id", user["family_id"])
         .order("created_at", desc=True)
     )
@@ -88,6 +89,41 @@ async def list_documents(
 
     result = query.execute()
     return {"documents": result.data or []}
+
+
+@router.get("/{document_id}/download")
+async def get_document_download_url(
+    document_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Get a short-lived signed URL to open a stored document."""
+    supabase = get_supabase()
+    result = (
+        supabase.table("documents")
+        .select("id, storage_path")
+        .eq("id", document_id)
+        .eq("family_id", user["family_id"])
+        .single()
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    storage_path = result.data.get("storage_path")
+    if not storage_path:
+        raise HTTPException(status_code=404, detail="Document storage path not found")
+
+    try:
+        signed = supabase.storage.from_("documents").create_signed_url(storage_path, 900)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to generate document URL")
+
+    url = signed.get("signedURL") or signed.get("signedUrl") or signed.get("signed_url")
+    if not url:
+        raise HTTPException(status_code=500, detail="No signed URL returned")
+
+    return {"url": url}
 
 
 @router.get("/{document_id}")

@@ -1,0 +1,23 @@
+{
+  "family_id": "fam_primary",
+  "members": [
+    {
+      "role": "guardian",
+      "first_name": "Amina",
+      "last_name": "Diallo",
+      "email": "amina.diallo@example.com",
+      "phone": "+1 555 101 2222",
+      "dob": "1988-03-22",
+      "address_line_1": "123 Maple Ave",
+      "city": "Boston",
+      "state": "MA",
+      "zip": "02118"
+    },
+    {
+      "role": "child",
+      "first_name": "Ibrahima",
+      "last_name": "Diallo",
+      "dob": "2014-09-11"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "events": [
+    {
+      "type": "manual_unseen_field",
+      "field_name": "district_code",
+      "label": "School district code",
+      "value": "SD-1182",
+      "context": "school enrollment",
+      "action": "user_typed_after_no_suggestion"
+    }
+  ]
+}

@@ -1,33 +1,41 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FamilyOS Autofill</title>
-  <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-  <div class="container">
-    <h1>FamilyOS</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FamilyOS Autofill</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>FamilyOS Autofill</h1>
+      <p class="subtitle">Precision-first autofill</p>
 
-    <!-- Login Section -->
-    <div id="login-section">
-      <p class="subtitle">Sign in to autofill forms</p>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <button id="login-btn" class="btn btn-primary">Sign In</button>
-      <p id="login-error" class="error"></p>
-    </div>
+      <div class="controls">
+        <button id="scan-btn" class="btn primary">Scan this form</button>
+        <button id="apply-btn" class="btn" disabled>Apply selected</button>
+      </div>
 
-    <!-- Autofill Section (shown after login) -->
-    <div id="autofill-section" style="display: none;">
-      <p class="subtitle">Signed in as <span id="user-email"></span></p>
-      <button id="autofill-btn" class="btn btn-primary">Autofill This Page</button>
-      <div id="status" class="status"></div>
-      <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
-    </div>
-  </div>
+      <section class="mock-panel">
+        <label class="mock-toggle">
+          <input id="mock-mode-toggle" type="checkbox" />
+          <span>Use demo mocks</span>
+        </label>
+        <p class="mock-help">Works on local fixtures and live forms without the backend.</p>
+      </section>
 
-  <script src="popup.js"></script>
-</body>
+      <section>
+        <h2>Suggestions</h2>
+        <ul id="suggestion-list" class="suggestions"></ul>
+      </section>
+
+      <p id="status" class="status"></p>
+    </main>
+    <script src="../shared/field_normalization.js"></script>
+    <script src="../shared/confidence.js"></script>
+    <script src="../shared/autofill_runtime.js"></script>
+    <script src="../shared/feedback_queue.js"></script>
+    <script src="../shared/mock_autofill.js"></script>
+    <script src="popup.js"></script>
+  </body>
 </html>

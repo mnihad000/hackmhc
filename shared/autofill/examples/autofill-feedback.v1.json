@@ -1,0 +1,23 @@
+{
+  "contract_version": "familyos.autofill.v1",
+  "events": [
+    {
+      "event_id": "evt_0001",
+      "timestamp": "2026-03-28T14:12:03Z",
+      "field_id": "guardian_first_name|0",
+      "field_name": "guardian_first_name",
+      "action": "accepted",
+      "suggestion_id": "sug_6d920a27",
+      "original_value": "Maria",
+      "final_value": "Maria"
+    },
+    {
+      "event_id": "evt_0002",
+      "timestamp": "2026-03-28T14:12:10Z",
+      "field_id": "student_middle_name|2",
+      "field_name": "student_middle_name",
+      "action": "manual",
+      "final_value": "Elena"
+    }
+  ]
+}

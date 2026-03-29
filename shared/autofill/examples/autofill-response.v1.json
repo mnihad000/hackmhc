@@ -1,0 +1,34 @@
+{
+  "contract_version": "familyos.autofill.v1",
+  "request_id": "req_9f6f6704",
+  "suggestions": [
+    {
+      "suggestion_id": "sug_6d920a27",
+      "field_id": "guardian_first_name|0",
+      "field_name": "guardian_first_name",
+      "value": "Maria",
+      "confidence": 0.96,
+      "confidence_bucket": "high",
+      "source_type": "canonical",
+      "source_ref": "family_profile.guardian_1.first_name",
+      "profile_key": "guardian_1.first_name",
+      "reason": "Exact canonical profile match for guardian first name",
+      "fill_strategy": "text",
+      "requires_review": false
+    },
+    {
+      "suggestion_id": "sug_2c97f3d1",
+      "field_id": "state|1",
+      "field_name": "state",
+      "value": "MA",
+      "confidence": 0.91,
+      "confidence_bucket": "high",
+      "source_type": "learned",
+      "source_ref": "mapping:home_address.state",
+      "profile_key": "home_address.state",
+      "reason": "Address mapping matched current select options",
+      "fill_strategy": "select_by_value",
+      "requires_review": false
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://familyos.dev/schemas/autofill-feedback.schema.json",
+  "title": "FamilyOS Autofill Feedback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "events"],
+  "properties": {
+    "contract_version": {
+      "const": "familyos.autofill.v1"
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/feedbackEvent"
+      }
+    }
+  },
+  "$defs": {
+    "feedbackEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "timestamp",
+        "field_id",
+        "field_name",
+        "action"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "field_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "enum": ["accepted", "rejected", "edited", "manual"]
+        },
+        "suggestion_id": {
+          "type": "string"
+        },
+        "original_value": {
+          "type": "string"
+        },
+        "final_value": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

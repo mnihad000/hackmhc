@@ -1,0 +1,31 @@
+{
+  "suggestions": [
+    {
+      "field_name": "phone",
+      "value": "+1 555 303 4444",
+      "confidence": 0.89,
+      "sourceType": "canonical",
+      "reason": "validated_phone",
+      "normalized_key": "phone",
+      "semantic_score": 0.82
+    },
+    {
+      "field_name": "address",
+      "value": "88 New Street",
+      "confidence": 0.71,
+      "sourceType": "rag",
+      "reason": "document_match",
+      "normalized_key": "address_line_1",
+      "semantic_score": 0.78
+    },
+    {
+      "field_name": "state",
+      "value": "Massachusetts",
+      "confidence": 0.48,
+      "sourceType": "inferred",
+      "reason": "weak_similarity",
+      "normalized_key": "state",
+      "semantic_score": 0.45
+    }
+  ]
+}

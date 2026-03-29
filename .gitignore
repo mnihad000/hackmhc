@@ -1,10 +1,12 @@
-
-**/__pycache__/
-*.pyc
-
-# Next.js / Node
-frontend/.next/
-frontend/node_modules/
-
-# Local env
+backend/.venv/
+backend/.env
+.env
+frontend/node_modules
 frontend/.env.local
+node_modules/
+extension/node_modules/
+*.log
+
+frontend/.next/
+__pycache__/
+*.pyc

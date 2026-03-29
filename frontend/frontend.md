@@ -37,6 +37,15 @@ frontend/
 - Auth: JWT token from Supabase passed as `Authorization: Bearer <token>`
 - File uploads: `multipart/form-data` via fetch
 
+## Shared contract
+
+Autofill provenance and correction flows should use the shared contract in:
+- `../shared/autofill/CONTRACT.md`
+- `../shared/autofill/schemas/autofill-response.schema.json`
+
+Frontend note:
+- `source_type`, `profile_key`, `reason`, and `requires_review` are shared UX fields, not frontend-local inventions.
+
 ## Environment Variables
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co

@@ -1,140 +1,282 @@
-const API_URL = "http://localhost:8000";
+let latestFields = [];
+let latestSuggestions = [];
+let latestUsedMockFixture = null;
+let scanInFlight = false;
 
-// Check if already logged in on popup open
-document.addEventListener("DOMContentLoaded", async () => {
-  const { token, email } = await chrome.storage.local.get(["token", "email"]);
-  if (token) {
-    showAutofillSection(email);
-  }
-});
+function setStatus(text, isError = false) {
+  const status = document.getElementById("status");
+  status.textContent = text;
+  status.style.color = isError ? "#dc2626" : "#0f172a";
+}
 
-// Login handler
-document.getElementById("login-btn").addEventListener("click", async () => {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const errorEl = document.getElementById("login-error");
-  const btn = document.getElementById("login-btn");
+function fieldForSuggestion(suggestion) {
+  return latestFields.find((field) => field.field_id === suggestion.field_id) || null;
+}
 
-  if (!email || !password) {
-    errorEl.textContent = "Please enter email and password";
+function updateApplyButtonState() {
+  const hasSelection = Array.from(
+    document.querySelectorAll('#suggestion-list input[type="checkbox"]')
+  ).some((input) => input.checked && !input.disabled);
+  document.getElementById("apply-btn").disabled = !hasSelection;
+}
+
+function renderSuggestions(items) {
+  const list = document.getElementById("suggestion-list");
+  list.innerHTML = "";
+
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.textContent = "No confident suggestions found for this form.";
+    list.appendChild(li);
+    document.getElementById("apply-btn").disabled = true;
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = "Signing in...";
-  errorEl.textContent = "";
-
-  try {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.detail || "Login failed");
+  items.forEach((item) => {
+    const field = fieldForSuggestion(item);
+    const score = Number(item.confidence || 0);
+    const li = document.createElement("li");
+    if (item.requires_review) {
+      li.classList.add("requires-review");
     }
 
-    const data = await res.json();
-    await chrome.storage.local.set({
-      token: data.access_token,
-      email: email,
-    });
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.fieldId = item.field_id;
+    checkbox.checked = FamilyOSAutofillRuntime.isSuggestionPreselected(item);
 
-    showAutofillSection(email);
-  } catch (err) {
-    errorEl.textContent = err.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Sign In";
+    const body = document.createElement("div");
+    const heading = document.createElement("strong");
+    heading.textContent = field?.label || item.field_label || item.field_name;
+
+    const value = document.createElement("div");
+    value.className = "value";
+    value.textContent = item.value || "(empty)";
+
+    const source = document.createElement("div");
+    source.className = "meta";
+    source.textContent = `${item.confidence_bucket} ${score.toFixed(2)} | ${item.source_type}`;
+
+    body.appendChild(heading);
+    body.appendChild(value);
+    body.appendChild(source);
+
+    if (field?.section) {
+      const section = document.createElement("div");
+      section.className = "meta";
+      section.textContent = field.section;
+      body.appendChild(section);
+    }
+
+    if (item.reason) {
+      const reason = document.createElement("div");
+      reason.className = "meta";
+      reason.textContent = item.reason;
+      body.appendChild(reason);
+    }
+
+    if (item.requires_review) {
+      const review = document.createElement("div");
+      review.className = "meta review-note";
+      review.textContent = "Requires explicit review";
+      body.appendChild(review);
+    }
+
+    label.appendChild(checkbox);
+    label.appendChild(body);
+    li.appendChild(label);
+    list.appendChild(li);
+  });
+
+  updateApplyButtonState();
+}
+
+async function getActiveTab() {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tabs[0];
+}
+
+async function loadMockModeSetting() {
+  const key = FamilyOSMockAutofill.MOCK_AUTOFILL_ENABLED_KEY;
+  const data = await chrome.storage.local.get(key);
+  document.getElementById("mock-mode-toggle").checked = Boolean(data[key]);
+}
+
+async function persistMockModeSetting(enabled) {
+  const key = FamilyOSMockAutofill.MOCK_AUTOFILL_ENABLED_KEY;
+  await chrome.storage.local.set({ [key]: Boolean(enabled) });
+}
+
+function mockModeEnabled() {
+  return Boolean(document.getElementById("mock-mode-toggle")?.checked);
+}
+
+function suggestionSourceLabel(mockMeta) {
+  if (!mockMeta) return null;
+  if (mockMeta.mode === "fixture" && mockMeta.fixture_name) {
+    return mockMeta.fixture_name;
   }
-});
+  if (mockMeta.mode === "demo_profile") {
+    return "demo profile";
+  }
+  return null;
+}
 
-// Autofill handler
-document.getElementById("autofill-btn").addEventListener("click", async () => {
-  const statusEl = document.getElementById("status");
-  const btn = document.getElementById("autofill-btn");
+async function flushQueuedFeedback() {
+  const batch = await FamilyOSFeedbackQueue.peekBatch();
+  if (!batch.length) return;
 
-  btn.disabled = true;
-  statusEl.className = "status loading";
-  statusEl.textContent = "Scanning form fields...";
+  const apiResponse = await chrome.runtime.sendMessage({
+    action: "autofill_feedback",
+    feedback: {
+      contract_version: FamilyOSAutofillRuntime.CONTRACT_VERSION,
+      events: batch
+    }
+  });
 
+  if (!apiResponse.ok) {
+    throw new Error(apiResponse.error || "Failed to submit feedback.");
+  }
+
+  await FamilyOSFeedbackQueue.acknowledgeEvents(batch.map((event) => event.event_id));
+}
+
+async function scanAndFetchSuggestions() {
+  if (scanInFlight) return;
+  scanInFlight = true;
+
+  setStatus("Scanning fields...");
   try {
-    // 1. Get the active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    // 2. Ask content script to extract form fields
-    const fields = await chrome.tabs.sendMessage(tab.id, { action: "extract" });
-
-    if (!fields || fields.length === 0) {
-      statusEl.className = "status error";
-      statusEl.textContent = "No form fields found on this page";
+    const tab = await getActiveTab();
+    const extractResponse = await chrome.tabs.sendMessage(tab.id, { action: "extract_fields" });
+    latestFields = extractResponse?.fields || [];
+    if (!latestFields.length) {
+      latestSuggestions = [];
+      renderSuggestions([]);
+      setStatus("No fillable fields found on this page.", true);
       return;
     }
 
-    statusEl.textContent = `Found ${fields.length} fields. Fetching data...`;
-
-    // 3. Send fields to backend for autofill
-    const { token } = await chrome.storage.local.get("token");
-    const res = await fetch(`${API_URL}/api/autofill`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ fields }),
+    setStatus(`Found ${latestFields.length} fields. Resolving suggestions...`);
+    const request = FamilyOSAutofillRuntime.buildAutofillRequest({
+      fields: latestFields,
+      pageUrl: tab.url || "",
+      pageTitle: tab.title || ""
     });
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        await chrome.storage.local.remove(["token", "email"]);
-        showLoginSection();
-        throw new Error("Session expired. Please sign in again.");
-      }
-      throw new Error("Autofill request failed");
+    const apiResponse = await chrome.runtime.sendMessage({
+      action: "autofill_suggest",
+      request
+    });
+    if (!apiResponse.ok) {
+      const baseMessage = apiResponse.error || "Failed to fetch suggestions.";
+      throw new Error(
+        mockModeEnabled()
+          ? baseMessage
+          : `${baseMessage} Enable demo mocks or connect the backend.`
+      );
     }
 
-    const data = await res.json();
-    const fillCount = Object.keys(data.fills).length;
-
-    if (fillCount === 0) {
-      statusEl.className = "status error";
-      statusEl.textContent = "No matching data found in your documents";
-      return;
-    }
-
-    // 4. Send fill values to content script
-    await chrome.tabs.sendMessage(tab.id, {
-      action: "fill",
-      fills: data.fills,
-      fields: fields,
-    });
-
-    statusEl.className = "status success";
-    statusEl.textContent = `Filled ${fillCount} fields from ${data.sources.length} document(s)`;
-  } catch (err) {
-    statusEl.className = "status error";
-    statusEl.textContent = err.message;
+    const mockSource = suggestionSourceLabel(apiResponse.payload?._mock);
+    latestUsedMockFixture = mockSource;
+    latestSuggestions = FamilyOSAutofillRuntime.normalizeSuggestionsResponse(apiResponse.payload, latestFields);
+    renderSuggestions(latestSuggestions);
+    setStatus(
+      latestSuggestions.length
+        ? latestUsedMockFixture
+          ? `Loaded ${latestSuggestions.length} suggestion(s) from ${latestUsedMockFixture}.`
+          : `Loaded ${latestSuggestions.length} suggestion(s).`
+        : "No confident suggestions found for this form."
+    );
   } finally {
-    btn.disabled = false;
+    scanInFlight = false;
+  }
+}
+
+async function applySelectedSuggestions() {
+  const selectedFieldIds = Array.from(
+    document.querySelectorAll('#suggestion-list input[type="checkbox"]:checked')
+  ).map((el) => el.getAttribute("data-field-id"));
+  const selected = latestSuggestions.filter((suggestion) => selectedFieldIds.includes(suggestion.field_id));
+
+  if (!selected.length) {
+    setStatus("No suggestions selected.", true);
+    return;
+  }
+
+  const tab = await getActiveTab();
+  const response = await chrome.tabs.sendMessage(tab.id, {
+    action: "apply_suggestions",
+    suggestions: selected
+  });
+
+  const applyResults = Array.isArray(response?.results) ? response.results : [];
+  const feedbackEvents = FamilyOSAutofillRuntime.buildApplyFeedbackEvents({
+    displayedSuggestions: latestSuggestions,
+    selectedFieldIds,
+    applyResults
+  });
+
+  if (feedbackEvents.length) {
+    await FamilyOSFeedbackQueue.enqueueFeedbackEvents(feedbackEvents);
+  }
+
+  let feedbackQueued = false;
+  try {
+    await flushQueuedFeedback();
+  } catch (_error) {
+    feedbackQueued = true;
+  }
+
+  const filledCount = Number(response?.filled || 0);
+  setStatus(
+    feedbackQueued
+      ? `Filled ${filledCount} field(s). Feedback queued for retry.`
+      : `Filled ${filledCount} field(s).`
+  );
+}
+
+document.getElementById("scan-btn").addEventListener("click", async () => {
+  try {
+    await flushQueuedFeedback().catch(() => {});
+    await scanAndFetchSuggestions();
+  } catch (error) {
+    setStatus(error.message, true);
   }
 });
 
-// Logout handler
-document.getElementById("logout-btn").addEventListener("click", async () => {
-  await chrome.storage.local.remove(["token", "email"]);
-  showLoginSection();
+document.getElementById("apply-btn").addEventListener("click", async () => {
+  try {
+    await applySelectedSuggestions();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
 });
 
-function showAutofillSection(email) {
-  document.getElementById("login-section").style.display = "none";
-  document.getElementById("autofill-section").style.display = "block";
-  document.getElementById("user-email").textContent = email;
-  document.getElementById("status").textContent = "";
-}
+document.getElementById("suggestion-list").addEventListener("change", () => {
+  updateApplyButtonState();
+});
 
-function showLoginSection() {
-  document.getElementById("login-section").style.display = "block";
-  document.getElementById("autofill-section").style.display = "none";
-}
+document.getElementById("mock-mode-toggle").addEventListener("change", async (event) => {
+  try {
+    await persistMockModeSetting(event.target.checked);
+    setStatus(
+      event.target.checked
+        ? "Demo mock mode enabled."
+        : "Demo mock mode disabled."
+    );
+    await scanAndFetchSuggestions();
+  } catch (error) {
+    event.target.checked = !event.target.checked;
+    setStatus(error.message, true);
+  }
+});
+
+Promise.all([
+  loadMockModeSetting(),
+  flushQueuedFeedback().catch(() => {})
+])
+  .then(() => scanAndFetchSuggestions().catch((error) => {
+    setStatus(error.message, true);
+  }))
+  .catch(() => {});

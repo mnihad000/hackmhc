@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "./layout";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Home() {
   const { session, loading } = useAuth();
@@ -15,7 +15,7 @@ export default function Home() {
   }, [session, loading, router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex min-h-screen items-center justify-center">
       <p className="text-gray-400">Loading...</p>
     </div>
   );
