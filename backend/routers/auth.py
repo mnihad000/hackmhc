@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 
-from middleware.auth import get_current_user, require_admin
+from middleware.auth import get_current_user, require_admin, require_member_or_admin
 from services.supabase_client import get_supabase
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -153,8 +153,8 @@ async def logout():
 
 
 @router.post("/invite-code")
-async def create_invite_code(req: InviteRequest, user: dict = Depends(require_admin)):
-    """Create a family invite code (admin only)."""
+async def create_invite_code(req: InviteRequest, user: dict = Depends(require_member_or_admin)):
+    """Create a family invite code (admin/member)."""
     if req.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail="Invalid role")
     if req.expires_in_hours <= 0 or req.expires_in_hours > 168:
@@ -184,9 +184,24 @@ async def create_invite_code(req: InviteRequest, user: dict = Depends(require_ad
 
 
 @router.post("/invite")
-async def create_invite_code_alias(req: InviteRequest, user: dict = Depends(require_admin)):
+async def create_invite_code_alias(req: InviteRequest, user: dict = Depends(require_member_or_admin)):
     """Backward-compatible alias for /invite-code."""
     return await create_invite_code(req, user)
+
+
+@router.get("/invite-codes")
+async def list_invite_codes(user: dict = Depends(require_member_or_admin)):
+    """List invite codes for the current family (admin/member)."""
+    supabase = get_supabase()
+    result = (
+        supabase.table("invite_codes")
+        .select("id, code, role, max_uses, used_count, expires_at, is_active, created_at")
+        .eq("family_id", user["family_id"])
+        .order("created_at", desc=True)
+        .limit(20)
+        .execute()
+    )
+    return {"invite_codes": result.data or []}
 
 
 @router.post("/join-family")

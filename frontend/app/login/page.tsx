@@ -23,7 +23,7 @@ export default function LoginPage() {
         password,
       });
       if (error) throw error;
-      router.push("/documents");
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {

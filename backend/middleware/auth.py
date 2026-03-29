@@ -57,3 +57,13 @@ async def require_admin(user: dict = Depends(get_current_user)):
             detail="Admin access required",
         )
     return user
+
+
+async def require_member_or_admin(user: dict = Depends(get_current_user)):
+    """Dependency that allows admins and members."""
+    if user["role"] not in ("admin", "member"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or member access required",
+        )
+    return user

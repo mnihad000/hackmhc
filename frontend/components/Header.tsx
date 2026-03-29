@@ -7,8 +7,10 @@ import { useDisplayName } from "@/hooks/useDisplayName";
 export default function Header() {
   const displayName = useDisplayName();
   const pathname = usePathname();
-  const onUsersOsPage = pathname === "/uploadFile";
-  const onUploadFilePage = pathname === "/documents";
+  const onDashboardPage = pathname === "/dashboard";
+  const onDocumentsPage = pathname === "/uploadFile";
+  const onUploadPage = pathname === "/documents";
+  const onFamilyPage = pathname === "/family";
 
   const linkClass = (active: boolean) =>
     `rounded-xl px-4 py-2 text-sm font-semibold tracking-wide transition-colors ${
@@ -22,12 +24,18 @@ export default function Header() {
       <div className="flex h-full items-center justify-between">
         <div className="text-sm font-medium text-slate-500">FamilyOS</div>
         <div className="flex items-center gap-3">
-        <Link href="/uploadFile" className={linkClass(onUsersOsPage)}>
-          {displayName ? `${displayName}'s OS` : "OS"}
-        </Link>
-        <Link href="/documents" className={linkClass(onUploadFilePage)}>
-          Upload File
-        </Link>
+          <Link href="/dashboard" className={linkClass(onDashboardPage)}>
+            Dashboard
+          </Link>
+          <Link href="/uploadFile" className={linkClass(onDocumentsPage)}>
+            {displayName ? `${displayName}'s Docs` : "Documents"}
+          </Link>
+          <Link href="/documents" className={linkClass(onUploadPage)}>
+            Upload
+          </Link>
+          <Link href="/family" className={linkClass(onFamilyPage)}>
+            Family
+          </Link>
         </div>
       </div>
     </header>

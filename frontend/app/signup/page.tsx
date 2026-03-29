@@ -39,7 +39,7 @@ export default function SignupPage() {
       });
       if (error) throw error;
 
-      router.push("/documents");
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Signup failed");
     } finally {

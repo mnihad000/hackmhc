@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, documents, chat, family, autofill
+from routers import auth, documents, chat, family, autofill, operations, dashboard
 
 app = FastAPI(
     title="FamilyOS API",
@@ -29,6 +29,8 @@ app.include_router(documents.router)
 app.include_router(chat.router)
 app.include_router(family.router)
 app.include_router(autofill.router)
+app.include_router(operations.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/")
