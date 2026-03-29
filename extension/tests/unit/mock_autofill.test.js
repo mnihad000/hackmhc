@@ -59,7 +59,7 @@ test("buildDemoPayloadForRequest maps common live-form fields", () => {
 
   const emailSuggestion = payload.suggestions.find((item) => item.field_name === "24emailadr");
   assert.ok(emailSuggestion);
-  assert.equal(emailSuggestion.value, "amina.diallo@example.com");
+  assert.equal(emailSuggestion.value, "rachel.smith@example.com");
   assert.equal(emailSuggestion.confidence_bucket, "high");
 
   const cardTypeSuggestion = payload.suggestions.find((item) => item.field_name === "40cc__type");
