@@ -6,11 +6,28 @@ This folder contains the FamilyOS Chrome extension for precision-first autofill.
 
 Help users fill repetitive form fields using FamilyOS data while avoiding incorrect autofill.
 
+## Team install
+
+For teammates pulling this branch for the demo:
+
+1. Pull the branch and open the repo locally.
+2. In Chrome, open `chrome://extensions`.
+3. Enable `Developer mode`.
+4. Click `Load unpacked`.
+5. Select the repo's `extension/` folder.
+6. Pin the `FamilyOS Autofill` extension in the Chrome toolbar.
+7. Reload the extension after pulling new changes.
+
+Recommended for local fixture testing:
+
+1. On the extension card in `chrome://extensions`, enable `Allow access to file URLs` if you plan to open `file://` fixtures directly.
+2. Refresh the form page after every extension reload so the latest content script is attached.
+
 ## Product behavior (MVP)
 
 1. Detect fillable fields on the active page.
-2. Surface an inline launcher when fillable fields are detected.
-3. Request backend suggestions with confidence per field.
+2. Open the popup from the Chrome toolbar to scan the current page.
+3. Request suggestions for detected fields.
 4. Show preview with high-confidence suggestions preselected.
 5. Fill only user-approved fields.
 6. Send fill outcomes and manual corrections back to backend.
@@ -83,6 +100,13 @@ extension/
 - Run tests:
   - `npm test`
 
+## Demo mode
+
+- The current demo build uses bundled mock suggestion data by default.
+- The bundled demo profile is in `shared/mock_profiles/housing_application_profile.js`.
+- The popup does not expose a mock-mode toggle in this branch.
+- Live backend auth is still available from the popup if needed for later testing.
+
 ## Manual fixture testing
 
 For browser testing without a live backend:
@@ -92,17 +116,11 @@ For browser testing without a live backend:
    - `cd extension/tests/fixtures/forms`
    - `python -m http.server 5501`
 3. Open one of the fixture pages in Chrome.
-4. Open the extension popup and enable `Use fixture mocks`.
+4. Open the extension popup.
 5. Click `Scan this form`.
 
 Fixture response data for this flow lives in:
 - `tests/fixtures/autofill/manual_fixture_responses.json`
-
-## Inline launcher behavior
-
-- When the content script detects fillable fields, it shows a small in-page FamilyOS launcher automatically.
-- Clicking the launcher opens a compact prompt with an `Autofill` button.
-- The `Autofill` button attempts to open the extension popup directly. If Chrome blocks that, the prompt tells the user to click the FamilyOS toolbar icon.
 
 ## Team alignment notes
 
