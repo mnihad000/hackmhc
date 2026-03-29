@@ -69,7 +69,7 @@ export default function FamilyPage() {
   };
 
   if (loading) {
-    return <div className="animate-pulse h-40 bg-gray-100 rounded-xl" />;
+    return <div className="h-40 animate-pulse rounded-xl bg-slate-100" />;
   }
 
   const roleBadge = (role: string) => {
@@ -91,37 +91,37 @@ export default function FamilyPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">
+      <h2 className="mb-1 text-2xl font-bold text-slate-900">
         {family?.name || "Your Family"}
       </h2>
-      <p className="text-gray-500 mb-8">{members.length} members</p>
+      <p className="mb-8 text-slate-500">{members.length} members</p>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-slate-50">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">
                 Name
               </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">
                 Role
               </th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">
                 Joined
               </th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase text-slate-500">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {members.map((member) => (
               <tr key={member.id}>
-                <td className="px-6 py-4 font-medium text-gray-900">
+                <td className="px-6 py-4 font-medium text-slate-900">
                   {member.display_name}
                 </td>
                 <td className="px-6 py-4">{roleBadge(member.role)}</td>
-                <td className="px-6 py-4 text-sm text-gray-500">
+                <td className="px-6 py-4 text-sm text-slate-500">
                   {new Date(member.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 text-right">
@@ -130,7 +130,7 @@ export default function FamilyPage() {
                     onChange={(e) =>
                       handleRoleChange(member.id, e.target.value)
                     }
-                    className="text-sm border border-gray-200 rounded px-2 py-1 mr-2"
+                    className="mr-2 rounded border border-slate-200 px-2 py-1 text-sm"
                   >
                     <option value="admin">Admin</option>
                     <option value="member">Member</option>
