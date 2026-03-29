@@ -18,4 +18,8 @@ if not RESOLVED_OPENAI_API_KEY:
     )
 
 # Document categories
-CATEGORIES = ["finance", "education", "medical", "identity", "legal", "other"]
+CATEGORIES = ["finance", 
+            "education", 
+            "housing documents / rent receipts / leases", 
+            "medical",
+            "Misc"]
