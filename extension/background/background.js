@@ -1,7 +1,8 @@
 if (typeof importScripts === "function") {
-  importScripts("../shared/mock_autofill.js");
+  importScripts("../shared/mock_autofill.js", "../shared/feedback_queue.js");
 }
 
+const CONTRACT_VERSION = "familyos.autofill.v1";
 const DEFAULT_API_BASE = "http://localhost:8000";
 const ACTION_BADGE_COLOR = "#0f766e";
 const DEFAULT_ACTION_TITLE = "FamilyOS Autofill";
@@ -30,6 +31,75 @@ async function getAuthHeaders() {
   return headers;
 }
 
+async function persistLoggedInSession(payload, apiBaseOverride) {
+  const token = String(payload?.access_token || "").trim();
+  if (!token) {
+    throw new Error("Login succeeded without an access token.");
+  }
+
+  const updates = {
+    token,
+    refresh_token: String(payload?.refresh_token || "").trim(),
+    auth_user_email: String(payload?.user?.email || "").trim(),
+    auth_user_id: String(payload?.user?.id || "").trim()
+  };
+
+  const apiBase = String(apiBaseOverride || "").trim();
+  if (apiBase && apiBase !== DEFAULT_API_BASE) {
+    updates.api_base = apiBase;
+  }
+
+  await chrome.storage.local.set(updates);
+  if (!apiBase || apiBase === DEFAULT_API_BASE) {
+    await chrome.storage.local.remove("api_base");
+  }
+
+  return {
+    authenticated: true,
+    email: updates.auth_user_email,
+    api_base: apiBase || DEFAULT_API_BASE
+  };
+}
+
+async function clearAuthSession() {
+  await chrome.storage.local.remove([
+    "token",
+    "refresh_token",
+    "auth_user_email",
+    "auth_user_id"
+  ]);
+  return { authenticated: false };
+}
+
+async function loginWithPassword(credentials) {
+  const email = String(credentials?.email || "").trim().toLowerCase();
+  const password = String(credentials?.password || "").trim();
+  const apiBase = String(credentials?.api_base || "").trim() || (await getApiBase());
+
+  if (!email || !password) {
+    throw new Error("Email and password are required.");
+  }
+
+  let response;
+  try {
+    response = await fetch(`${apiBase}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+  } catch {
+    throw new Error(`Could not reach backend at ${apiBase}.`);
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || `Login failed (${response.status})`);
+  }
+
+  const payload = await response.json();
+  return persistLoggedInSession(payload, apiBase);
+}
+
 async function requestAutofillSuggestions(payload) {
   if (await isMockModeEnabled()) {
     const mockPayload = await FamilyOSMockAutofill.mockPayloadForRequest(payload);
@@ -38,6 +108,9 @@ async function requestAutofillSuggestions(payload) {
 
   const apiBase = await getApiBase();
   const headers = await getAuthHeaders();
+  if (!headers.Authorization) {
+    throw new Error("Not authenticated. Sign in in the extension.");
+  }
   const response = await fetch(`${apiBase}/api/autofill`, {
     method: "POST",
     headers,
@@ -59,6 +132,9 @@ async function submitFeedback(payload) {
 
   const apiBase = await getApiBase();
   const headers = await getAuthHeaders();
+  if (!headers.Authorization) {
+    throw new Error("Not authenticated. Sign in in the extension.");
+  }
   const response = await fetch(`${apiBase}/api/autofill/feedback`, {
     method: "POST",
     headers,
@@ -71,6 +147,39 @@ async function submitFeedback(payload) {
   }
 
   return response.json();
+}
+
+async function queueAndFlushFeedback(events) {
+  const items = Array.isArray(events) ? events.filter(Boolean) : [];
+  if (!items.length) {
+    return { accepted_events: 0, flushed: true, queued: 0 };
+  }
+
+  await FamilyOSFeedbackQueue.enqueueFeedbackEvents(items);
+
+  try {
+    const batch = await FamilyOSFeedbackQueue.peekBatch();
+    if (!batch.length) {
+      return { accepted_events: 0, flushed: true, queued: 0 };
+    }
+
+    const payload = await submitFeedback({
+      contract_version: CONTRACT_VERSION,
+      events: batch
+    });
+    await FamilyOSFeedbackQueue.acknowledgeEvents(batch.map((event) => event.event_id));
+    return {
+      accepted_events: Number(payload?.accepted_events || batch.length),
+      flushed: true,
+      queued: 0
+    };
+  } catch (_error) {
+    return {
+      accepted_events: 0,
+      flushed: false,
+      queued: await FamilyOSFeedbackQueue.queueSize()
+    };
+  }
 }
 
 async function updateActionState(tabId, fieldCount) {
@@ -127,6 +236,27 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   if (msg.action === "autofill_feedback") {
     submitFeedback(msg.feedback || { events: msg.events || [] })
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+
+  if (msg.action === "queue_feedback_events") {
+    queueAndFlushFeedback(msg.events || [])
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+
+  if (msg.action === "auth_login") {
+    loginWithPassword(msg.credentials || {})
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+
+  if (msg.action === "auth_logout") {
+    clearAuthSession()
       .then((payload) => sendResponse({ ok: true, payload }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;

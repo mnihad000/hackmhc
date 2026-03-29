@@ -2,10 +2,11 @@
   const INLINE_LAUNCHER_ROOT_ID = "familyos-inline-launcher";
   const INLINE_LAUNCHER_STYLE_ID = "familyos-inline-launcher-style";
   const SKIP_TYPES = new Set(["hidden", "submit", "button", "reset", "file", "image"]);
-  let launcherRoot = null;
   let detectionTimeout = null;
   let observer = null;
   let lastReportedFieldCount = -1;
+  let feedbackListenerAttached = false;
+  const feedbackTracking = new Map();
 
   function escapeSelector(value) {
     if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
@@ -21,6 +22,11 @@
     return (el.type || "text").toLowerCase();
   }
 
+  function elementFieldName(el) {
+    if (!el) return "";
+    return String(el.name || el.id || "").trim();
+  }
+
   function findElementsByFieldName(fieldName) {
     if (!fieldName) return [];
 
@@ -31,6 +37,156 @@
 
     const byId = document.getElementById(fieldName);
     return byId ? [byId] : [];
+  }
+
+  function readFieldValue(fieldName) {
+    const elements = findElementsByFieldName(fieldName);
+    if (!elements.length) return "";
+
+    const type = getElementType(elements[0]);
+    if (type === "radio") {
+      const checked = elements.find((el) => el.checked);
+      return checked ? String(checked.value || "").trim() : "";
+    }
+
+    if (type === "checkbox") {
+      if (elements.length > 1) {
+        return elements
+          .filter((el) => el.checked)
+          .map((el) => String(el.value || "true").trim())
+          .join(",");
+      }
+
+      const [el] = elements;
+      return el.checked ? String(el.value || "true").trim() : "";
+    }
+
+    return String(elements[0].value ?? "").trim();
+  }
+
+  function queueFeedbackEvent(eventPayload) {
+    chrome.runtime.sendMessage({
+      action: "queue_feedback_events",
+      events: [eventPayload]
+    }).catch(() => {});
+  }
+
+  function trackedFieldRecord(fieldName) {
+    return feedbackTracking.get(String(fieldName || "").trim()) || null;
+  }
+
+  function buildTrackingIndex(fields, suggestions) {
+    feedbackTracking.clear();
+
+    const suggestionsByFieldId = new Map();
+    const suggestionsByFieldName = new Map();
+
+    (suggestions || []).forEach((suggestion) => {
+      if (suggestion?.field_id) suggestionsByFieldId.set(suggestion.field_id, suggestion);
+      if (suggestion?.field_name && !suggestionsByFieldName.has(suggestion.field_name)) {
+        suggestionsByFieldName.set(suggestion.field_name, suggestion);
+      }
+    });
+
+    (fields || []).forEach((field) => {
+      const fieldName = String(field?.field_name || "").trim();
+      if (!fieldName) return;
+
+      const suggestion =
+        suggestionsByFieldId.get(field.field_id) ||
+        suggestionsByFieldName.get(fieldName) ||
+        null;
+
+      feedbackTracking.set(fieldName, {
+        field_id: String(field.field_id || fieldName).trim(),
+        field_name: fieldName,
+        has_suggestion: Boolean(suggestion),
+        suggestion_id: suggestion?.suggestion_id || null,
+        suggestion_value: suggestion ? String(suggestion.value ?? "") : "",
+        applied_value: null,
+        last_manual_value: null,
+        last_edited_value: null
+      });
+    });
+  }
+
+  function updateTrackingAfterApply(suggestions, applyResults) {
+    const resultMap = new Map();
+
+    (applyResults || []).forEach((result) => {
+      if (result?.field_id) resultMap.set(result.field_id, result);
+      if (result?.field_name && !resultMap.has(result.field_name)) {
+        resultMap.set(result.field_name, result);
+      }
+    });
+
+    (suggestions || []).forEach((suggestion) => {
+      const record = trackedFieldRecord(suggestion?.field_name);
+      if (!record) return;
+
+      const result =
+        resultMap.get(suggestion.field_id) ||
+        resultMap.get(suggestion.field_name) ||
+        null;
+
+      if (result?.status !== "filled") return;
+
+      record.applied_value = String(result.final_value ?? suggestion.value ?? "").trim();
+      record.suggestion_id = suggestion.suggestion_id || record.suggestion_id;
+      record.suggestion_value = String(suggestion.value ?? record.suggestion_value ?? "").trim();
+      record.last_edited_value = null;
+    });
+  }
+
+  function handleTrackedFieldChange(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const fieldName = elementFieldName(target);
+    if (!fieldName) return;
+
+    const record = trackedFieldRecord(fieldName);
+    if (!record) return;
+
+    const currentValue = readFieldValue(fieldName);
+
+    if (record.applied_value != null) {
+      if (currentValue === record.applied_value) {
+        record.last_edited_value = null;
+        return;
+      }
+
+      if (currentValue !== record.last_edited_value) {
+        queueFeedbackEvent({
+          field_id: record.field_id,
+          field_name: record.field_name,
+          action: "edited",
+          suggestion_id: record.suggestion_id,
+          original_value: record.applied_value,
+          final_value: currentValue
+        });
+        record.last_edited_value = currentValue;
+      }
+      return;
+    }
+
+    if (record.has_suggestion || !currentValue || currentValue === record.last_manual_value) {
+      return;
+    }
+
+    queueFeedbackEvent({
+      field_id: record.field_id,
+      field_name: record.field_name,
+      action: "manual",
+      final_value: currentValue
+    });
+    record.last_manual_value = currentValue;
+  }
+
+  function ensureFeedbackTrackingListener() {
+    if (feedbackListenerAttached) return;
+    document.addEventListener("change", handleTrackedFieldChange, true);
+    feedbackListenerAttached = true;
   }
 
   function fieldOptionsForElement(el, fieldName, type) {
@@ -87,253 +243,16 @@
     return fields;
   }
 
-  function launcherBadgeText(fieldCount) {
-    if (fieldCount > 99) return "99+";
-    return String(fieldCount || 0);
-  }
-
-  function launcherSummaryText(fieldCount) {
-    return fieldCount === 1 ? "1 field detected" : `${fieldCount} fields detected`;
-  }
-
-  function topLevelPage() {
-    return window.top === window;
-  }
-
-  function ensureLauncherStyles() {
-    if (!document.head || document.getElementById(INLINE_LAUNCHER_STYLE_ID)) return;
-
-    const style = document.createElement("style");
-    style.id = INLINE_LAUNCHER_STYLE_ID;
-    style.textContent = `
-      #${INLINE_LAUNCHER_ROOT_ID} {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 2147483647;
-        font-family: Arial, sans-serif;
-        color: #0f172a;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID}[hidden] {
-        display: none !important;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-shell {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 10px;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-toggle {
-        width: 54px;
-        height: 54px;
-        border: none;
-        border-radius: 999px;
-        background: linear-gradient(135deg, #0f766e, #1d4ed8);
-        color: #ffffff;
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-toggle:hover {
-        transform: translateY(-1px);
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-badge {
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        min-width: 22px;
-        height: 22px;
-        padding: 0 6px;
-        border-radius: 999px;
-        background: #f97316;
-        color: #ffffff;
-        font-size: 11px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-toggle-wrap {
-        position: relative;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-panel {
-        width: 220px;
-        border-radius: 16px;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        background: rgba(255, 255, 255, 0.97);
-        box-shadow: 0 16px 44px rgba(15, 23, 42, 0.2);
-        padding: 14px;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID}:not([data-open="true"]) .familyos-launcher-panel {
-        display: none;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-title {
-        font-size: 13px;
-        font-weight: 700;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-copy {
-        margin-top: 4px;
-        font-size: 12px;
-        color: #475569;
-        line-height: 1.4;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-open,
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-close {
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-open {
-        border: none;
-        background: #0f172a;
-        color: #ffffff;
-        flex: 1;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-close {
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
-        color: #0f172a;
-      }
-
-      #${INLINE_LAUNCHER_ROOT_ID} .familyos-launcher-status {
-        min-height: 16px;
-        margin-top: 10px;
-        font-size: 11px;
-        color: #64748b;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function setLauncherStatus(text, isError = false) {
-    if (!launcherRoot) return;
-    const status = launcherRoot.querySelector(".familyos-launcher-status");
-    if (!status) return;
-    status.textContent = text;
-    status.style.color = isError ? "#b91c1c" : "#64748b";
-  }
-
-  function setLauncherOpen(isOpen) {
-    if (!launcherRoot) return;
-    launcherRoot.dataset.open = isOpen ? "true" : "false";
-  }
-
-  async function openAutofillPopupFromLauncher() {
-    setLauncherStatus("Opening autofill…");
-
-    try {
-      const response = await chrome.runtime.sendMessage({ action: "open_autofill_popup" });
-      if (response?.ok) {
-        setLauncherStatus("Popup opened.");
-        setLauncherOpen(false);
-        return;
-      }
-
-      const fallbackMessage = response?.fallback === "toolbar_click"
-        ? "Chrome blocked auto-open. Click the FamilyOS toolbar icon."
-        : response?.error || "Unable to open the extension popup.";
-      setLauncherStatus(fallbackMessage, true);
-    } catch (error) {
-      setLauncherStatus(error.message || "Unable to open the extension popup.", true);
-    }
-  }
-
-  function ensureLauncher() {
-    if (!topLevelPage() || !document.body) return null;
-    if (launcherRoot?.isConnected) return launcherRoot;
-
-    ensureLauncherStyles();
-
-    launcherRoot = document.createElement("div");
-    launcherRoot.id = INLINE_LAUNCHER_ROOT_ID;
-    launcherRoot.dataset.open = "false";
-    launcherRoot.hidden = true;
-    launcherRoot.innerHTML = `
-      <div class="familyos-launcher-shell">
-        <div class="familyos-launcher-panel">
-          <div class="familyos-launcher-title">FamilyOS Autofill</div>
-          <div class="familyos-launcher-copy">Fill options are ready for this form.</div>
-          <div class="familyos-launcher-actions">
-            <button type="button" class="familyos-launcher-open">Autofill</button>
-            <button type="button" class="familyos-launcher-close">Close</button>
-          </div>
-          <div class="familyos-launcher-status"></div>
-        </div>
-        <div class="familyos-launcher-toggle-wrap">
-          <button type="button" class="familyos-launcher-toggle" aria-label="Open FamilyOS Autofill">FOS</button>
-          <div class="familyos-launcher-badge">0</div>
-        </div>
-      </div>
-    `;
-
-    launcherRoot.querySelector(".familyos-launcher-toggle")?.addEventListener("click", () => {
-      setLauncherOpen(launcherRoot.dataset.open !== "true");
-      setLauncherStatus("");
-    });
-
-    launcherRoot.querySelector(".familyos-launcher-close")?.addEventListener("click", () => {
-      setLauncherOpen(false);
-      setLauncherStatus("");
-    });
-
-    launcherRoot.querySelector(".familyos-launcher-open")?.addEventListener("click", () => {
-      openAutofillPopupFromLauncher();
-    });
-
-    document.body.appendChild(launcherRoot);
-    return launcherRoot;
-  }
-
-  function removeLauncherIfPresent() {
-    if (launcherRoot?.isConnected) {
-      launcherRoot.remove();
-    }
-    launcherRoot = null;
-  }
-
-  function syncLauncher(fields) {
-    if (!topLevelPage()) return;
-
-    const fieldCount = Array.isArray(fields) ? fields.length : 0;
-    if (!fieldCount) {
-      removeLauncherIfPresent();
-      reportFormPresence(fieldCount);
-      return;
+  function removeLegacyLauncherNodes() {
+    const legacyRoot = document.getElementById(INLINE_LAUNCHER_ROOT_ID);
+    if (legacyRoot) {
+      legacyRoot.remove();
     }
 
-    const root = ensureLauncher();
-    if (!root) return;
-
-    root.hidden = false;
-    const badge = root.querySelector(".familyos-launcher-badge");
-    const copy = root.querySelector(".familyos-launcher-copy");
-
-    if (badge) badge.textContent = launcherBadgeText(fieldCount);
-    if (copy) copy.textContent = `${launcherSummaryText(fieldCount)}. Click to open FamilyOS Autofill.`;
-
-    reportFormPresence(fieldCount);
+    const legacyStyle = document.getElementById(INLINE_LAUNCHER_STYLE_ID);
+    if (legacyStyle) {
+      legacyStyle.remove();
+    }
   }
 
   function reportFormPresence(fieldCount) {
@@ -348,7 +267,8 @@
 
   function detectAndSyncFormPresence() {
     const fields = extractFormFields();
-    syncLauncher(fields);
+    removeLegacyLauncherNodes();
+    reportFormPresence(fields.length);
   }
 
   function schedulePresenceSync() {
@@ -376,7 +296,7 @@
     });
   }
 
-  function initInlineLauncher() {
+  function initContentScript() {
     if (!topLevelPage()) return;
     if (!document.body) return;
 
@@ -526,6 +446,7 @@
 
   function applySuggestions(suggestions) {
     const results = (suggestions || []).map((item) => applySuggestion(item));
+    updateTrackingAfterApply(suggestions, results);
     return {
       filled: results.filter((result) => result.status === "filled").length,
       results
@@ -544,16 +465,24 @@
       return true;
     }
 
+    if (msg.action === "track_feedback_candidates") {
+      buildTrackingIndex(msg.fields || [], msg.suggestions || []);
+      ensureFeedbackTrackingListener();
+      sendResponse({ ok: true, tracked: feedbackTracking.size });
+      return true;
+    }
+
     return false;
   });
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initInlineLauncher, { once: true });
+    document.addEventListener("DOMContentLoaded", initContentScript, { once: true });
   } else {
-    initInlineLauncher();
+    initContentScript();
   }
 
   window.addEventListener("pageshow", () => {
     schedulePresenceSync();
   });
 })();
+

@@ -2,6 +2,16 @@ let latestFields = [];
 let latestSuggestions = [];
 let latestUsedMockFixture = null;
 let scanInFlight = false;
+const DEFAULT_API_BASE = "http://localhost:8000";
+const CONTENT_SCRIPT_FILES = [
+  "shared/field_normalization.js",
+  "shared/confidence.js",
+  "content/content_script.js"
+];
+let authState = {
+  token: null,
+  email: null
+};
 
 function setStatus(text, isError = false) {
   const status = document.getElementById("status");
@@ -97,15 +107,167 @@ async function getActiveTab() {
   return tabs[0];
 }
 
+function unsupportedPageMessage(url) {
+  const value = String(url || "").trim();
+  if (!value) {
+    return "Open a website with a form before scanning.";
+  }
+
+  const restrictedPrefixes = ["chrome://", "edge://", "about:", "chrome-extension://"];
+  if (restrictedPrefixes.some((prefix) => value.startsWith(prefix))) {
+    return "Chrome internal pages cannot be scanned. Open a regular website instead.";
+  }
+
+  if (
+    value.startsWith("https://chromewebstore.google.com") ||
+    value.startsWith("https://chrome.google.com/webstore")
+  ) {
+    return "The Chrome Web Store cannot be scanned. Open a regular website instead.";
+  }
+
+  return null;
+}
+
+function isMissingReceiverError(error) {
+  const text = String(error?.message || error || "");
+  return (
+    text.includes("Receiving end does not exist") ||
+    text.includes("Could not establish connection") ||
+    text.includes("The message port closed before a response was received")
+  );
+}
+
+async function ensureContentScriptInjected(tab) {
+  if (!tab?.id) {
+    throw new Error("Open a website with a form before scanning.");
+  }
+
+  const unsupportedMessage = unsupportedPageMessage(tab.url);
+  if (unsupportedMessage) {
+    throw new Error(unsupportedMessage);
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: CONTENT_SCRIPT_FILES
+    });
+  } catch (error) {
+    throw new Error(
+      unsupportedPageMessage(tab.url) ||
+      error?.message ||
+      "Could not attach the extension to this page. Refresh the page and try again."
+    );
+  }
+}
+
+async function extractFieldsFromTab(tab) {
+  try {
+    return await chrome.tabs.sendMessage(tab.id, { action: "extract_fields" });
+  } catch (error) {
+    if (!isMissingReceiverError(error)) {
+      throw new Error(error?.message || "Could not scan this page.");
+    }
+
+    await ensureContentScriptInjected(tab);
+    return chrome.tabs.sendMessage(tab.id, { action: "extract_fields" });
+  }
+}
+
 async function loadMockModeSetting() {
   const key = FamilyOSMockAutofill.MOCK_AUTOFILL_ENABLED_KEY;
   const data = await chrome.storage.local.get(key);
   document.getElementById("mock-mode-toggle").checked = Boolean(data[key]);
 }
 
+async function loadConnectionSettings() {
+  const data = await chrome.storage.local.get(["api_base", "token", "auth_user_email"]);
+  document.getElementById("api-base-input").value = data.api_base || DEFAULT_API_BASE;
+  authState = {
+    token: data.token || null,
+    email: data.auth_user_email || null
+  };
+  renderAuthState();
+}
+
 async function persistMockModeSetting(enabled) {
   const key = FamilyOSMockAutofill.MOCK_AUTOFILL_ENABLED_KEY;
   await chrome.storage.local.set({ [key]: Boolean(enabled) });
+}
+
+async function persistConnectionSettings() {
+  const apiBaseInput = document.getElementById("api-base-input");
+  const apiBase = String(apiBaseInput.value || "").trim();
+
+  if (!apiBase) {
+    apiBaseInput.value = DEFAULT_API_BASE;
+  }
+
+  if (apiBase && apiBase !== DEFAULT_API_BASE) {
+    await chrome.storage.local.set({ api_base: apiBase });
+  } else {
+    await chrome.storage.local.remove("api_base");
+  }
+}
+
+function renderAuthState() {
+  const signedOut = document.getElementById("auth-signed-out");
+  const signedIn = document.getElementById("auth-signed-in");
+  const authEmail = document.getElementById("auth-email");
+  const passwordInput = document.getElementById("password-input");
+
+  const isAuthenticated = Boolean(authState.token);
+  signedOut.hidden = isAuthenticated;
+  signedIn.hidden = !isAuthenticated;
+  authEmail.textContent = isAuthenticated
+    ? `Signed in as ${authState.email || "FamilyOS user"}`
+    : "";
+
+  if (isAuthenticated) {
+    passwordInput.value = "";
+  }
+}
+
+async function signIn() {
+  const email = String(document.getElementById("email-input").value || "").trim();
+  const password = String(document.getElementById("password-input").value || "").trim();
+  const apiBase = String(document.getElementById("api-base-input").value || "").trim() || DEFAULT_API_BASE;
+
+  if (!email || !password) {
+    throw new Error("Email and password are required.");
+  }
+
+  const response = await chrome.runtime.sendMessage({
+    action: "auth_login",
+    credentials: {
+      email,
+      password,
+      api_base: apiBase
+    }
+  });
+
+  if (!response?.ok) {
+    throw new Error(response?.error || "Login failed.");
+  }
+
+  await loadConnectionSettings();
+  document.getElementById("password-input").value = "";
+  return response.payload;
+}
+
+async function signOut() {
+  const response = await chrome.runtime.sendMessage({ action: "auth_logout" });
+  if (!response?.ok) {
+    throw new Error(response?.error || "Sign out failed.");
+  }
+
+  authState = {
+    token: null,
+    email: null
+  };
+  latestSuggestions = [];
+  renderSuggestions([]);
+  renderAuthState();
 }
 
 function mockModeEnabled() {
@@ -142,14 +304,32 @@ async function flushQueuedFeedback() {
   await FamilyOSFeedbackQueue.acknowledgeEvents(batch.map((event) => event.event_id));
 }
 
+async function syncFeedbackTracking(tab) {
+  if (!tab?.id) return;
+
+  await chrome.tabs.sendMessage(tab.id, {
+    action: "track_feedback_candidates",
+    fields: latestFields,
+    suggestions: latestSuggestions
+  });
+}
+
 async function scanAndFetchSuggestions() {
   if (scanInFlight) return;
   scanInFlight = true;
 
+  if (!mockModeEnabled() && !authState.token) {
+    latestSuggestions = [];
+    renderSuggestions([]);
+    setStatus("Sign in to fetch live suggestions, or enable demo mocks.", true);
+    scanInFlight = false;
+    return;
+  }
+
   setStatus("Scanning fields...");
   try {
     const tab = await getActiveTab();
-    const extractResponse = await chrome.tabs.sendMessage(tab.id, { action: "extract_fields" });
+    const extractResponse = await extractFieldsFromTab(tab);
     latestFields = extractResponse?.fields || [];
     if (!latestFields.length) {
       latestSuggestions = [];
@@ -181,6 +361,7 @@ async function scanAndFetchSuggestions() {
     latestUsedMockFixture = mockSource;
     latestSuggestions = FamilyOSAutofillRuntime.normalizeSuggestionsResponse(apiResponse.payload, latestFields);
     renderSuggestions(latestSuggestions);
+    await syncFeedbackTracking(tab);
     setStatus(
       latestSuggestions.length
         ? latestUsedMockFixture
@@ -272,8 +453,46 @@ document.getElementById("mock-mode-toggle").addEventListener("change", async (ev
   }
 });
 
+document.getElementById("auth-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const signInButton = document.getElementById("sign-in-btn");
+  signInButton.disabled = true;
+  signInButton.textContent = "Signing in...";
+
+  try {
+    const payload = await signIn();
+    setStatus(`Signed in as ${payload.email || authState.email || "FamilyOS user"}.`);
+    await scanAndFetchSuggestions();
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    signInButton.disabled = false;
+    signInButton.textContent = "Sign In";
+  }
+});
+
+document.getElementById("sign-out-btn").addEventListener("click", async () => {
+  try {
+    await signOut();
+    setStatus("Signed out of the extension.");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+document.getElementById("save-settings-btn").addEventListener("click", async () => {
+  try {
+    await persistConnectionSettings();
+    setStatus("Connection settings saved.");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
 Promise.all([
   loadMockModeSetting(),
+  loadConnectionSettings(),
   flushQueuedFeedback().catch(() => {})
 ])
   .then(() => scanAndFetchSuggestions().catch((error) => {

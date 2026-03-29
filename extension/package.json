@@ -4,6 +4,6 @@
   "private": true,
   "description": "FamilyOS Chrome extension (precision-first autofill)",
   "scripts": {
-    "test": "node --test tests/unit/*.test.js"
+    "test": "node --test --experimental-test-isolation=none tests/unit/*.test.js"
   }
 }
