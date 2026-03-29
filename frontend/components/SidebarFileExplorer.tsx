@@ -1,113 +1,94 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, FileText } from "lucide-react";
 import { Document } from "@/lib/types";
-
-interface FolderGroup {
-  id: string;
-  name: string;
-  files: Document[];
-}
+import { groupDocumentsByFolder } from "@/lib/documents";
+import { useDisplayName } from "@/hooks/useDisplayName";
 
 interface SidebarFileExplorerProps {
   documents: Document[];
   loading?: boolean;
 }
 
-function toTitleCase(value: string) {
-  return value
-    .split("_")
-    .join(" ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function groupDocuments(documents: Document[]): FolderGroup[] {
-  const groups = new Map<string, FolderGroup>();
-
-  for (const document of documents) {
-    const key = document.category || "other";
-    if (groups.has(key) === false) {
-      groups.set(key, {
-        id: key,
-        name: toTitleCase(key),
-        files: [],
-      });
-    }
-    groups.get(key)?.files.push(document);
-  }
-
-  return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name));
-}
-
 export default function SidebarFileExplorer({
   documents,
   loading = false,
 }: SidebarFileExplorerProps) {
-  const folders = useMemo(() => groupDocuments(documents), [documents]);
+  const displayName = useDisplayName();
+  const folders = useMemo(() => groupDocumentsByFolder(documents), [documents]);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setOpenFolders((prev) => {
       const next = { ...prev };
       for (const folder of folders) {
-        if (next[folder.id] === undefined) {
-          next[folder.id] = true;
+        if (next[folder.key] === undefined) {
+          next[folder.key] = true;
         }
       }
       return next;
     });
   }, [folders]);
 
-  const toggleFolder = (folderId: string) => {
-    setOpenFolders((prev) => ({
-      ...prev,
-      [folderId]: prev[folderId] === true ? false : true,
-    }));
-  };
-
   return (
-    <aside className="w-72 shrink-0 border-r-2 border-zinc-900 bg-zinc-50 p-4">
-      <h2 className="mb-8 text-5xl leading-none text-zinc-900">[User&#39;s] OS</h2>
+    <aside className="w-[305px] shrink-0 border-r border-slate-200 bg-slate-50/70 p-4">
+      <h2 className="mb-4 text-base font-semibold tracking-wide text-slate-900">
+        {displayName ? `${displayName}'s OS` : "OS"}
+      </h2>
 
-      <div className="space-y-3">
+      <div className="space-y-2 overflow-y-auto pr-1">
         {loading ? (
           <div className="space-y-2">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="h-8 animate-pulse border border-zinc-300 bg-zinc-100" />
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-9 animate-pulse rounded-xl border border-slate-200 bg-white"
+              />
             ))}
           </div>
-        ) : folders.length === 0 ? (
-          <p className="border border-dashed border-zinc-400 p-3 text-xs text-zinc-600">
-            No files uploaded yet.
-          </p>
         ) : (
           folders.map((folder) => {
-            const isOpen = openFolders[folder.id] ?? true;
+            const isOpen = openFolders[folder.key] ?? true;
             return (
-              <section key={folder.id} className="border border-zinc-900 bg-zinc-100/60">
+              <section key={folder.key} className="rounded-xl border border-slate-200 bg-white">
                 <button
                   type="button"
-                  onClick={() => toggleFolder(folder.id)}
-                  className="flex w-full items-center gap-2 border-b border-zinc-900 px-2 py-2 text-left text-sm font-semibold text-zinc-900"
+                  onClick={() =>
+                    setOpenFolders((prev) => ({
+                      ...prev,
+                      [folder.key]: !(prev[folder.key] ?? true),
+                    }))
+                  }
+                  className="flex w-full items-center justify-between px-3 py-2 text-left"
                 >
-                  {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  <Folder size={14} />
-                  <span>{folder.name}</span>
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <Folder size={16} />
+                    {folder.label}
+                  </span>
+                  {isOpen ? (
+                    <ChevronDown size={16} className="text-slate-500" />
+                  ) : (
+                    <ChevronRight size={16} className="text-slate-500" />
+                  )}
                 </button>
 
                 {isOpen && (
-                  <ul className="space-y-1 px-2 py-2">
-                    {folder.files.map((file) => (
-                      <li
-                        key={file.id}
-                        className="flex items-center gap-2 border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-700"
-                        title={file.filename}
-                      >
-                        <FileText size={12} className="shrink-0" />
-                        <span className="truncate">{file.filename}</span>
-                      </li>
-                    ))}
+                  <ul className="space-y-1 border-t border-slate-100 px-2 py-2">
+                    {folder.files.length === 0 ? (
+                      <li className="rounded-lg px-2 py-1 text-xs text-slate-400">No files</li>
+                    ) : (
+                      folder.files.map((file) => (
+                        <li
+                          key={file.id}
+                          className="flex items-center gap-2 rounded-lg px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                          title={file.filename}
+                        >
+                          <FileText size={13} className="shrink-0 text-slate-500" />
+                          <span className="truncate">{file.filename}</span>
+                        </li>
+                      ))
+                    )}
                   </ul>
                 )}
               </section>

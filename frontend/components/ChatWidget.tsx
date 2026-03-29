@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Send, X } from "lucide-react";
 
 const SAMPLE_MESSAGES = [
-  { id: "1", role: "assistant", text: "Hi there. Need help with your forms?" },
-  { id: "2", role: "user", text: "Can you check what I uploaded?" },
-  { id: "3", role: "assistant", text: "I can help once chat is connected." },
+  {
+    id: "m1",
+    role: "assistant",
+    text: "Hey, I'm Docster. Ask me about your uploaded documents and I'll search the right category for you.",
+  },
+  { id: "m2", role: "user", text: "hows my 1040" },
+  { id: "m3", role: "assistant", text: "Sorry, we couldn't find that in your uploaded documents." },
+  { id: "m4", role: "user", text: "tell me about my algo cheatsheet" },
+  { id: "m5", role: "assistant", text: "Sorry, we couldn't find that in your uploaded documents." },
 ] as const;
 
 export default function ChatWidget() {
@@ -14,32 +20,31 @@ export default function ChatWidget() {
   const [input, setInput] = useState("");
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => (prev ? false : true))}
-        className="fixed bottom-6 right-6 z-30 border-2 border-zinc-900 bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-200"
-      >
-        Chat with us live!
-      </button>
-
+    <div className="absolute bottom-4 right-5 z-30">
       {open && (
-        <section className="fixed bottom-20 right-6 z-30 w-[380px] border-2 border-zinc-900 bg-zinc-50">
-          <div className="flex items-center justify-between border-b-2 border-zinc-900 bg-zinc-100 px-3 py-2">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-900">Live Chat</h3>
-            <button type="button" onClick={() => setOpen(false)} className="text-zinc-700 hover:text-zinc-900">
-              <X size={16} />
+        <section className="mb-4 w-[450px] overflow-hidden rounded-[22px] border border-zinc-300 bg-zinc-100 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+          <div className="flex items-center justify-between bg-primary px-4 py-3 text-white">
+            <div>
+              <p className="text-2xl leading-none">Docster</p>
+              <p className="mt-1 text-lg leading-none text-blue-100">Family document assistant</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded p-1 text-blue-100 hover:bg-white/10"
+            >
+              <X size={20} />
             </button>
           </div>
 
-          <div className="h-64 space-y-2 overflow-y-auto border-b border-zinc-900 p-3">
+          <div className="h-[430px] space-y-3 overflow-y-auto p-4">
             {SAMPLE_MESSAGES.map((message) => (
               <div
                 key={message.id}
-                className={`max-w-[85%] border border-zinc-900 px-2 py-1 text-sm ${
+                className={`max-w-[88%] rounded-2xl px-4 py-3 text-[30px] leading-tight ${
                   message.role === "assistant"
-                    ? "bg-white text-zinc-900"
-                    : "ml-auto bg-zinc-200 text-zinc-900"
+                    ? "bg-zinc-200 text-zinc-800"
+                    : "ml-auto bg-primary text-white"
                 }`}
               >
                 {message.text}
@@ -52,23 +57,31 @@ export default function ChatWidget() {
               event.preventDefault();
               setInput("");
             }}
-            className="flex items-center gap-2 p-3"
+            className="flex items-center gap-2 border-t border-zinc-300 bg-zinc-50 p-3"
           >
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Type a message"
-              className="h-10 flex-1 border border-zinc-900 bg-white px-2 text-sm outline-none"
+              placeholder="Ask Docster about your documents..."
+              className="h-12 flex-1 rounded-xl border border-zinc-300 bg-white px-3 text-base text-zinc-700 outline-none"
             />
             <button
               type="submit"
-              className="h-10 border border-zinc-900 bg-zinc-200 px-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-300"
+              className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-500 text-white hover:bg-slate-600"
             >
-              Send
+              <Send size={18} />
             </button>
           </form>
         </section>
       )}
-    </>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="h-[58px] min-w-[335px] rounded-xl border-2 border-zinc-900 bg-zinc-100 px-6 text-[46px] leading-none text-zinc-900 hover:bg-zinc-200"
+      >
+        Chat with us live!
+      </button>
+    </div>
   );
 }

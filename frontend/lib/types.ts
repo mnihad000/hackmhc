@@ -5,6 +5,7 @@ export interface Document {
   page_count: number | null;
   created_at: string;
   uploaded_by: string;
+  storage_path?: string;
   profiles?: { display_name: string };
 }
 

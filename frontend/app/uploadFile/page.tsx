@@ -1,22 +1,20 @@
 "use client";
 
 import DocumentsWorkspace from "@/components/DocumentsWorkspace";
-import UploadPanel from "@/components/UploadPanel";
+import DocumentsTable from "@/components/DocumentsTable";
 import { useAuth } from "@/components/AuthProvider";
 import { useDocuments } from "@/hooks/useDocuments";
 
-export default function DocumentsPage() {
+export default function UploadFilePage() {
   const { token, signOut } = useAuth();
-  const { documents, loading, refreshDocuments } = useDocuments({
+  const { documents, loading } = useDocuments({
     token,
     onUnauthorized: signOut,
   });
 
   return (
     <DocumentsWorkspace documents={documents} loading={loading}>
-      <div className="flex h-full items-center justify-center">
-        <UploadPanel token={token} onUploadComplete={refreshDocuments} />
-      </div>
+      <DocumentsTable token={token} documents={documents} loading={loading} />
     </DocumentsWorkspace>
   );
 }
