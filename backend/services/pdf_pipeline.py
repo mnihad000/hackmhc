@@ -5,13 +5,13 @@ from typing import Optional
 from openai import OpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from config import CATEGORIES, OPENAI_API_KEY
+from config import CATEGORIES, OPENAI_RAG_API_KEY
 from services.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 
 # API Connection
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_RAG_API_KEY)
 
 # Idk what this is 
 splitter = RecursiveCharacterTextSplitter(
