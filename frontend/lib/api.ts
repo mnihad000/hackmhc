@@ -1,6 +1,12 @@
 // The base URL for all API requests — falls back to localhost if not set in .env
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+function buildApiUrl(path: string): string {
+  const normalizedBase = API_URL.replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 // Reusable fetch wrapper — use this instead of calling fetch() directly anywhere in the app
 export async function apiFetch(
   path: string,         // e.g. "/documents" or "/users/me"
@@ -26,7 +32,7 @@ export async function apiFetch(
   // Make the actual HTTP request to the full URL (base + path)
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await fetch(buildApiUrl(path), {
       ...options,   // spread in method, body, etc.
       headers,      // use our merged headers
     });

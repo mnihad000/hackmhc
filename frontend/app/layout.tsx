@@ -1,5 +1,6 @@
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
+import GlobalChatWidget from "@/components/GlobalChatWidget";
 
 export default function RootLayout({
   children,
@@ -9,7 +10,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-zinc-100">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <GlobalChatWidget />
+        </AuthProvider>
       </body>
     </html>
   );

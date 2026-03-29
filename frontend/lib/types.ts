@@ -20,6 +20,7 @@ export interface ChatMessage {
 export interface ChatResponse {
   answer: string;
   sources: { document_id: string; filename: string }[];
+  route_category?: Category;
 }
 
 export interface FamilyMember {
