@@ -19,7 +19,8 @@ if not RESOLVED_OPENAI_API_KEY:
 
 # Document categories
 CATEGORIES = ["finance", 
-            "education", 
-            "housing documents / rent receipts / leases", 
-            "medical",
-            "Misc"]
+             "education", 
+            "medical", 
+            "housing forms / rent receipts / utility bills", 
+            "government benefits",
+            "misc"]
