@@ -8,3 +8,5 @@ extension/node_modules/
 *.log
 
 frontend/.next/
+__pycache__/
+*.pyc
