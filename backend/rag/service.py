@@ -1,8 +1,8 @@
 from openai import OpenAI
-from config import OPENAI_API_KEY
+from config import OPENAI_RAG_API_KEY
 from services.supabase_client import get_supabase
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_RAG_API_KEY)
 
 SYSTEM_PROMPT = """You are a helpful family document assistant for FamilyOS.
 Answer the user's question using ONLY the provided document excerpts.
@@ -190,3 +190,4 @@ async def autofill_query(fields: list[dict], family_id: str) -> dict:
         "fills": fills,
         "sources": source_names,
     }
+
