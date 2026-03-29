@@ -13,10 +13,11 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",       # Next.js dev
+        "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "chrome-extension://*",        # Chrome extension
     ],
+    # Allow local frontend dev on any port (3000, 3001, etc.) and Chrome extension origins.
+    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?|chrome-extension://.*)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -9,14 +9,14 @@ interface AuthContext {
   session: Session | null;
   token: string | null;
   loading: boolean;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthCtx = createContext<AuthContext>({
   session: null,
   token: null,
   loading: true,
-  signOut: () => {},
+  signOut: async () => {},
 });
 
 export function useAuth() {

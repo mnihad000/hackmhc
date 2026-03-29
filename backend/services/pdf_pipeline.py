@@ -1,6 +1,7 @@
 import logging
 import uuid
 import fitz  # PyMuPDF -- PDF Library?
+from typing import Optional
 from openai import OpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -150,7 +151,7 @@ async def process_pdf(
         except Exception as e:
             logger.warning(f"Failed to store embeddings (doc still saved): {e}")
 
-    warning: str | None = None
+    warning: Optional[str] = None
     if not full_text.strip():
         warning = "No text could be extracted (scanned PDF?)"
     return {

@@ -9,7 +9,7 @@ import DocumentCard from "@/components/DocumentCard";
 import CategoryFilter from "@/components/CategoryFilter";
 
 export default function DocumentsPage() {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,12 +20,17 @@ export default function DocumentsPage() {
       const params = activeCategory ? `?category=${activeCategory}` : "";
       const data = await apiFetch(`/api/documents${params}`, {}, token);
       setDocuments(data.documents);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("401") || msg.includes("unauthorized")) {
+        await signOut();
+        return;
+      }
       console.error("Failed to fetch documents:", err);
     } finally {
       setLoading(false);
     }
-  }, [token, activeCategory]);
+  }, [token, activeCategory, signOut]);
 
   useEffect(() => {
     fetchDocuments();
@@ -45,9 +50,30 @@ export default function DocumentsPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      if (token) {
+        await apiFetch("/api/auth/logout", { method: "POST" }, token);
+      }
+    } catch {
+      // Ignore backend logout errors and clear local session regardless.
+    } finally {
+      await signOut();
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Documents</h2>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          Logout
+        </button>
+      </div>
 
       {/* Upload Zone */}
       <FileUpload token={token} onUploadComplete={handleUploadComplete} />
