@@ -5,7 +5,7 @@ from typing import Optional
 from openai import OpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from config import CATEGORIES, RESOLVED_OPENAI_RAG_API_KEY
+from config import CATEGORIES, RESOLVED_OPENAI_API_KEY
 from services.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
