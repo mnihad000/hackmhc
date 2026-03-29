@@ -1,0 +1,22 @@
+{
+  "suggestions": [
+    {
+      "field_name": "email",
+      "value": "sam.old@example.com",
+      "confidence": 0.67,
+      "sourceType": "rag",
+      "reason": "older_document",
+      "normalized_key": "email",
+      "semantic_score": 0.76
+    },
+    {
+      "field_name": "email",
+      "value": "sam.lee@example.com",
+      "confidence": 0.9,
+      "sourceType": "canonical",
+      "reason": "latest_verified_profile",
+      "normalized_key": "email",
+      "semantic_score": 0.86
+    }
+  ]
+}

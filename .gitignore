@@ -3,3 +3,10 @@ backend/.env
 .env
 frontend/node_modules
 frontend/.env.local
+node_modules/
+extension/node_modules/
+*.log
+
+frontend/.next/
+__pycache__/
+*.pyc

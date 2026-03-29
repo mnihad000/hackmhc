@@ -1,16 +1,17 @@
 import logging
 import uuid
 import fitz  # PyMuPDF -- PDF Library?
+from typing import Optional
 from openai import OpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from config import CATEGORIES, OPENAI_API_KEY
+from config import CATEGORIES, RESOLVED_OPENAI_API_KEY
 from services.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 
 # API Connection
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=RESOLVED_OPENAI_API_KEY)
 
 # Idk what this is 
 splitter = RecursiveCharacterTextSplitter(
@@ -150,7 +151,7 @@ async def process_pdf(
         except Exception as e:
             logger.warning(f"Failed to store embeddings (doc still saved): {e}")
 
-    warning: str | None = None
+    warning: Optional[str] = None
     if not full_text.strip():
         warning = "No text could be extracted (scanned PDF?)"
     return {

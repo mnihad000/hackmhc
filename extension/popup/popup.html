@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FamilyOS Autofill</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>FamilyOS Autofill</h1>
+      <p class="subtitle">Precision-first autofill</p>
+
+      <section id="auth-signed-out" class="auth-card">
+        <h2 class="auth-title">Sign in to your family account</h2>
+        <p class="auth-copy">Use the same email and password as the FamilyOS web app.</p>
+        <form id="auth-form" class="auth-form">
+          <input
+            id="email-input"
+            class="auth-input"
+            type="email"
+            inputmode="email"
+            autocomplete="username"
+            placeholder="Email"
+            required
+          />
+          <input
+            id="password-input"
+            class="auth-input"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Password"
+            required
+          />
+          <button id="sign-in-btn" class="btn primary auth-submit" type="submit">Sign In</button>
+        </form>
+      </section>
+
+      <section id="auth-signed-in" class="auth-card auth-card-success" hidden>
+        <h2 class="auth-title">Connected</h2>
+        <p id="auth-email" class="auth-copy"></p>
+        <div class="auth-actions">
+          <button id="sign-out-btn" class="btn" type="button">Sign Out</button>
+        </div>
+      </section>
+
+      <div class="controls">
+        <button id="scan-btn" class="btn primary">Scan this form</button>
+        <button id="apply-btn" class="btn" disabled>Apply selected</button>
+      </div>
+
+      <section class="settings-panel">
+        <details>
+          <summary>Connection</summary>
+          <div class="settings-fields">
+            <label class="settings-field">
+              <span>API base</span>
+              <input
+                id="api-base-input"
+                type="url"
+                inputmode="url"
+                spellcheck="false"
+                placeholder="http://localhost:8000"
+              />
+            </label>
+            <div class="settings-actions">
+              <button id="save-settings-btn" class="btn" type="button">Save API base</button>
+            </div>
+            <p class="settings-help">
+              Demo mocks do not need backend auth. For live backend autofill, sign in above and keep the API base pointed at your backend.
+            </p>
+          </div>
+        </details>
+      </section>
+
+      <section class="mock-panel">
+        <label class="mock-toggle">
+          <input id="mock-mode-toggle" type="checkbox" />
+          <span>Use demo mocks</span>
+        </label>
+        <p class="mock-help">Works on local fixtures and live forms without the backend.</p>
+      </section>
+
+      <section>
+        <h2>Suggestions</h2>
+        <ul id="suggestion-list" class="suggestions"></ul>
+      </section>
+
+      <p id="status" class="status"></p>
+    </main>
+    <script src="../shared/field_normalization.js"></script>
+    <script src="../shared/confidence.js"></script>
+    <script src="../shared/autofill_runtime.js"></script>
+    <script src="../shared/feedback_queue.js"></script>
+    <script src="../shared/mock_autofill.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "FamilyOS Autofill",
+  "description": "Precision-first autofill for family document data.",
+  "version": "0.1.0",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "action": {
+    "default_title": "FamilyOS Autofill",
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "shared/field_normalization.js",
+        "shared/confidence.js",
+        "content/content_script.js"
+      ]
+    }
+  ]
+}

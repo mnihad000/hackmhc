@@ -1,0 +1,13 @@
+{
+  "suggestions": [
+    {
+      "field_name": "guardian_name",
+      "value": "Unknown Candidate",
+      "confidence": 0.31,
+      "sourceType": "inferred",
+      "reason": "low_overlap",
+      "normalized_key": "unknown",
+      "semantic_score": 0.32
+    }
+  ]
+}

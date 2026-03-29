@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from middleware.auth import get_current_user
-from services.rag import rag_query
+from rag.service import rag_query
 from services.supabase_client import get_supabase
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])

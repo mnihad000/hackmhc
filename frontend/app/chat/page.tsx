@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "../layout";
+import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { ChatMessage as ChatMsgType, ChatResponse } from "@/lib/types";
 import ChatMessage from "@/components/ChatMessage";
@@ -15,7 +15,7 @@ const STARTERS = [
 ];
 
 export default function ChatPage() {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const [messages, setMessages] = useState<ChatMsgType[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -25,8 +25,13 @@ export default function ChatPage() {
     if (!token) return;
     apiFetch("/api/chat/history", {}, token)
       .then((data) => setMessages(data.messages))
-      .catch(() => {});
-  }, [token]);
+      .catch(async (err: any) => {
+        const msg = String(err?.message || "").toLowerCase();
+        if (msg.includes("401") || msg.includes("unauthorized")) {
+          await signOut();
+        }
+      });
+  }, [token, signOut]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,6 +69,12 @@ export default function ChatPage() {
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("401") || msg.includes("unauthorized")) {
+        await signOut();
+        return;
+      }
+
       const errorMsg: ChatMsgType = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -83,14 +94,14 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Document Chat</h2>
+    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-5xl flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-2xl font-bold text-slate-900">Document Chat</h2>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {messages.length === 0 && !sending && (
           <div className="text-center py-12">
-            <p className="text-gray-400 mb-6">
+            <p className="mb-6 text-slate-500">
               Ask questions about your family documents
             </p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -98,7 +109,7 @@ export default function ChatPage() {
                 <button
                   key={q}
                   onClick={() => sendMessage(q)}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-primary hover:text-primary transition-colors"
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:border-primary hover:text-primary"
                 >
                   {q}
                 </button>
@@ -112,7 +123,7 @@ export default function ChatPage() {
         ))}
 
         {sending && (
-          <div className="flex items-center gap-2 text-gray-400 text-sm pl-4">
+          <div className="flex items-center gap-2 pl-4 text-sm text-slate-400">
             <div className="flex gap-1">
               <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" />
               <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.1s]" />
@@ -126,14 +137,14 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex gap-3 pt-4 border-t">
+      <form onSubmit={handleSubmit} className="flex gap-3 border-t border-slate-200 pt-4">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about your documents..."
           disabled={sending}
-          className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50"
+          className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
         />
         <button
           type="submit"

@@ -1,7 +1,5 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
-from config import SUPABASE_JWT_SECRET
 from services.supabase_client import get_supabase
 
 security = HTTPBearer()
@@ -10,30 +8,25 @@ security = HTTPBearer()
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
-    """Verify Supabase JWT and return user info with family_id and role."""
+    """Verify token against Supabase Auth and return user info with family_id and role."""
     token = credentials.credentials
+    supabase = get_supabase()
     try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-    except JWTError:
+        user_response = supabase.auth.get_user(token)
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
-
-    user_id = payload.get("sub")
-    if not user_id:
+    user = user_response.user
+    if not user or not user.id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
+    user_id = user.id
 
     # Fetch profile to get family_id and role
-    supabase = get_supabase()
     result = (
         supabase.table("profiles")
         .select("family_id, role, display_name")

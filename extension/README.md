@@ -9,7 +9,7 @@ Help users fill repetitive form fields using FamilyOS data while avoiding incorr
 ## Product behavior (MVP)
 
 1. Detect fillable fields on the active page.
-2. Prompt user to autofill with FamilyOS.
+2. Surface an inline launcher when fillable fields are detected.
 3. Request backend suggestions with confidence per field.
 4. Show preview with high-confidence suggestions preselected.
 5. Fill only user-approved fields.
@@ -82,6 +82,27 @@ extension/
   - `feedback/` (mocked outcome payloads)
 - Run tests:
   - `npm test`
+
+## Manual fixture testing
+
+For browser testing without a live backend:
+
+1. Load `extension/` as an unpacked Chrome extension.
+2. Serve `tests/fixtures/forms/`, for example:
+   - `cd extension/tests/fixtures/forms`
+   - `python -m http.server 5501`
+3. Open one of the fixture pages in Chrome.
+4. Open the extension popup and enable `Use fixture mocks`.
+5. Click `Scan this form`.
+
+Fixture response data for this flow lives in:
+- `tests/fixtures/autofill/manual_fixture_responses.json`
+
+## Inline launcher behavior
+
+- When the content script detects fillable fields, it shows a small in-page FamilyOS launcher automatically.
+- Clicking the launcher opens a compact prompt with an `Autofill` button.
+- The `Autofill` button attempts to open the extension popup directly. If Chrome blocks that, the prompt tells the user to click the FamilyOS toolbar icon.
 
 ## Team alignment notes
 

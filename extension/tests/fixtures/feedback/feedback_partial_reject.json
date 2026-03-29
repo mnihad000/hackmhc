@@ -1,0 +1,10 @@
+{
+  "events": [
+    {
+      "type": "apply_result",
+      "selected_count": 3,
+      "filled_count": 2,
+      "rejected_fields": ["address_line_1"]
+    }
+  ]
+}

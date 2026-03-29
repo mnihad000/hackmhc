@@ -5,6 +5,7 @@ export interface Document {
   page_count: number | null;
   created_at: string;
   uploaded_by: string;
+  storage_path?: string;
   profiles?: { display_name: string };
 }
 
@@ -20,6 +21,7 @@ export interface ChatMessage {
 export interface ChatResponse {
   answer: string;
   sources: { document_id: string; filename: string }[];
+  route_category?: Category;
 }
 
 export interface FamilyMember {
