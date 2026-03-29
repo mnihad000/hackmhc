@@ -1,0 +1,12 @@
+# 1) Ignore these patterns going forward
+Add-Content .gitignore "`n# Python cache
+**/__pycache__/
+*.pyc
+
+# Next.js / Node
+frontend/node_modules/
+frontend/.next/
+
+# Local env
+frontend/.env.local
+"
