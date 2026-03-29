@@ -1,6 +1,10 @@
 import uuid
 import fitz  # PyMuPDF
 
+<<<<<<< Updated upstream
+=======
+from config import CATEGORIES, RESOLVED_OPENAI_API_KEY
+>>>>>>> Stashed changes
 from services.supabase_client import get_supabase
 
 
