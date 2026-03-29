@@ -15,7 +15,7 @@ export default function DocumentsWorkspace({
   children,
 }: DocumentsWorkspaceProps) {
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-100 p-4">
+    <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-100 via-sky-50 to-slate-100 p-4">
       <div className="mx-auto flex h-full w-full max-w-[1560px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <Header />
 

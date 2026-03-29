@@ -18,7 +18,7 @@ export default function Header() {
     }`;
 
   return (
-    <header className="h-16 shrink-0 border-b border-slate-200 bg-white/95 px-6 backdrop-blur">
+    <header className="h-16 shrink-0 border-b border-sky-100 bg-gradient-to-r from-white via-sky-50/70 to-white px-6 backdrop-blur">
       <div className="flex h-full items-center justify-between">
         <div className="text-sm font-medium text-slate-500">FamilyOS</div>
         <div className="flex items-center gap-3">
