@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "../layout";
+import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { ChatMessage as ChatMsgType, ChatResponse } from "@/lib/types";
 import ChatMessage from "@/components/ChatMessage";
