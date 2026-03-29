@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "../layout";
+import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { Family, FamilyMember } from "@/lib/types";
 
 export default function FamilyPage() {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const [family, setFamily] = useState<Family | null>(null);
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,35 +18,52 @@ export default function FamilyPage() {
         setFamily(data.family);
         setMembers(data.members);
       })
-      .catch(() => {})
+      .catch(async (err: any) => {
+        const msg = String(err?.message || "").toLowerCase();
+        if (msg.includes("401") || msg.includes("unauthorized")) {
+          await signOut();
+        }
+      })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, signOut]);
 
   const handleRoleChange = async (memberId: string, newRole: string) => {
+    if (!token) return;
     try {
       await apiFetch(
         `/api/family/members/${memberId}`,
         { method: "PATCH", body: JSON.stringify({ role: newRole }) },
-        token!
+        token
       );
       setMembers((prev) =>
         prev.map((m) => (m.id === memberId ? { ...m, role: newRole as any } : m))
       );
     } catch (err: any) {
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("401") || msg.includes("unauthorized")) {
+        await signOut();
+        return;
+      }
       alert(err.message);
     }
   };
 
   const handleRemove = async (memberId: string) => {
+    if (!token) return;
     if (!confirm("Remove this member from your family?")) return;
     try {
       await apiFetch(
         `/api/family/members/${memberId}`,
         { method: "DELETE" },
-        token!
+        token
       );
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err: any) {
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("401") || msg.includes("unauthorized")) {
+        await signOut();
+        return;
+      }
       alert(err.message);
     }
   };

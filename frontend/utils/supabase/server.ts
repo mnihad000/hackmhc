@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         // Read all cookies from the incoming request so Supabase can find the session token

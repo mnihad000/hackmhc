@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import secrets
 import string
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -26,7 +27,7 @@ class LoginRequest(BaseModel):
 
 
 class InviteRequest(BaseModel):
-    email: EmailStr | None = None
+    email: Optional[EmailStr] = None
     role: str = "member"
     expires_in_hours: int = 24
     max_uses: int = 1
@@ -50,7 +51,7 @@ def _create_invite_code_record(
 ) -> dict:
     supabase = get_supabase()
     expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
-    last_exc: Exception | None = None
+    last_exc: Optional[Exception] = None
 
     for _ in range(5):
         code = _generate_invite_code()
@@ -140,6 +141,15 @@ async def login(req: LoginRequest):
             "email": auth_response.user.email,
         },
     }
+
+
+@router.post("/logout")
+async def logout():
+    """
+    Logout endpoint.
+    Session invalidation is primarily handled client-side by Supabase auth.signOut().
+    """
+    return {"message": "Logged out"}
 
 
 @router.post("/invite-code")

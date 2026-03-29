@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from typing import Optional
 from middleware.auth import get_current_user, require_admin
 from services.pdf_pipeline import process_pdf
 from services.supabase_client import get_supabase
@@ -11,8 +12,8 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 @router.post("/upload")
 async def upload_document(
-    file: UploadFile | None = File(None),
-    files: list[UploadFile] | None = File(None),
+    file: Optional[UploadFile] = File(None),
+    files: Optional[list[UploadFile]] = File(None),
     user: dict = Depends(get_current_user),
 ):
     """Upload one or more PDFs and store metadata."""
@@ -71,7 +72,7 @@ async def upload_document(
 
 @router.get("")
 async def list_documents(
-    category: str | None = Query(None),
+    category: Optional[str] = Query(None),
     user: dict = Depends(get_current_user),
 ):
     """List all documents for the user's family, optionally filtered by category."""

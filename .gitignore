@@ -6,3 +6,5 @@ frontend/.env.local
 node_modules/
 extension/node_modules/
 *.log
+
+frontend/.next/

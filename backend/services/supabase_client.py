@@ -1,7 +1,8 @@
 from supabase import create_client, Client
 from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from typing import Optional
 
-_supabase: Client | None = None
+_supabase: Optional[Client] = None
 
 
 def get_supabase() -> Client:

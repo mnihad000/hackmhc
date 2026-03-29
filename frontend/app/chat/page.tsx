@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "../layout";
+import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { ChatMessage as ChatMsgType, ChatResponse } from "@/lib/types";
 import ChatMessage from "@/components/ChatMessage";
@@ -15,7 +15,7 @@ const STARTERS = [
 ];
 
 export default function ChatPage() {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const [messages, setMessages] = useState<ChatMsgType[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -25,8 +25,13 @@ export default function ChatPage() {
     if (!token) return;
     apiFetch("/api/chat/history", {}, token)
       .then((data) => setMessages(data.messages))
-      .catch(() => {});
-  }, [token]);
+      .catch(async (err: any) => {
+        const msg = String(err?.message || "").toLowerCase();
+        if (msg.includes("401") || msg.includes("unauthorized")) {
+          await signOut();
+        }
+      });
+  }, [token, signOut]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,6 +69,12 @@ export default function ChatPage() {
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("401") || msg.includes("unauthorized")) {
+        await signOut();
+        return;
+      }
+
       const errorMsg: ChatMsgType = {
         id: crypto.randomUUID(),
         role: "assistant",
