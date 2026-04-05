@@ -1,5 +1,9 @@
 if (typeof importScripts === "function") {
-  importScripts("../shared/mock_autofill.js", "../shared/feedback_queue.js");
+  importScripts(
+    "../shared/mock_profiles/housing_application_profile.js",
+    "../shared/mock_autofill.js",
+    "../shared/feedback_queue.js"
+  );
 }
 
 const CONTRACT_VERSION = "familyos.autofill.v1";
@@ -21,7 +25,7 @@ async function getApiBase() {
 async function isMockModeEnabled() {
   const key = FamilyOSMockAutofill?.MOCK_AUTOFILL_ENABLED_KEY || "mock_autofill_enabled";
   const data = await chrome.storage.local.get(key);
-  return Boolean(data[key]);
+  return data[key] !== false;
 }
 
 async function getAuthHeaders() {
