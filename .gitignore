@@ -1,6 +1,7 @@
 backend/.venv/
 backend/.env
 backend/.env.pull-blocker.tmp
+backend/.env.pre-merge.backup
 .env
 frontend/node_modules
 frontend/.env.local
