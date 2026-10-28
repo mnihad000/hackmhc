@@ -14,10 +14,10 @@ frontend/
     layout.tsx            -- Root layout with sidebar nav
     page.tsx              -- Redirect to /documents or /login
     login/page.tsx        -- Login form
-    signup/page.tsx       -- Signup form (creates family)
+    signup/page.tsx       -- Signup form (create family or join by invite code)
     documents/page.tsx    -- Upload zone + categorized document grid
     chat/page.tsx         -- RAG chatbot interface
-    family/page.tsx       -- Family member management (admin)
+    family/page.tsx       -- Family member management and invite-code joining
   components/
     FileUpload.tsx        -- Drag-and-drop PDF upload zone
     DocumentCard.tsx      -- Single document card in grid
@@ -33,7 +33,7 @@ frontend/
 
 ## API Communication
 - All backend calls go through `lib/api.ts`
-- Base URL: `NEXT_PUBLIC_API_URL` (default: `http://localhost:8000`)
+- Base URL: `NEXT_PUBLIC_API_URL` (default: `http://127.0.0.1:8000`)
 - Auth: JWT token from Supabase passed as `Authorization: Bearer <token>`
 - File uploads: `multipart/form-data` via fetch
 
@@ -50,7 +50,7 @@ Frontend note:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
 ## Key Patterns

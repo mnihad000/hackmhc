@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { Family, FamilyMember, InviteCode } from "@/lib/types";
+import InviteFieldHelp from "@/components/InviteFieldHelp";
 
 export default function FamilyPage() {
   const { token, signOut } = useAuth();
@@ -137,6 +138,14 @@ export default function FamilyPage() {
   const joinFamilyWithCode = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!token || !joinCode.trim() || joinLoading) return;
+    if (
+      hasFamily &&
+      !window.confirm(
+        "Joining this family will switch you from your current family. You will lose access to its documents and shared data. Continue?"
+      )
+    ) {
+      return;
+    }
     setJoinLoading(true);
     setJoinMessage("");
     try {
@@ -198,31 +207,43 @@ export default function FamilyPage() {
           </h2>
           <p className="mb-6 text-slate-500">{members.length} members</p>
 
-          {!hasFamily && (
-            <section className="mb-6 max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="mb-2 text-lg font-semibold text-slate-900">Join Family by Invite Code</h3>
-              <p className="mb-3 text-sm text-slate-500">
-                Enter a code from a family admin/member to join their FamilyOS.
+          <section className="mb-6 max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">
+              {hasFamily ? "Join Another Family" : "Join Family by Invite Code"}
+            </h3>
+            <p className="mb-3 text-sm text-slate-500">
+              {hasFamily
+                ? "Enter an invite code to switch to another family. You will lose access to your current family's shared data."
+                : "Enter a code from a family admin/member to join their FamilyOS."}
+            </p>
+            <form onSubmit={joinFamilyWithCode} className="flex gap-2">
+              <input
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                placeholder="Invite code"
+                aria-label="Family invite code"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm tracking-wider"
+              />
+              <button
+                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                disabled={joinLoading || !joinCode.trim()}
+              >
+                {joinLoading ? "Joining..." : hasFamily ? "Switch family" : "Join"}
+              </button>
+            </form>
+            {joinMessage && (
+              <p
+                role="status"
+                className={`mt-2 text-sm ${
+                  joinMessage.toLowerCase().includes("successfully")
+                    ? "text-emerald-700"
+                    : "text-red-600"
+                }`}
+              >
+                {joinMessage}
               </p>
-              <form onSubmit={joinFamilyWithCode} className="flex gap-2">
-                <input
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder="Invite code"
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm tracking-wider"
-                />
-                <button
-                  className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  disabled={joinLoading || !joinCode.trim()}
-                >
-                  {joinLoading ? "Joining..." : "Join"}
-                </button>
-              </form>
-              {joinMessage && (
-                <p className="mt-2 text-sm text-slate-700">{joinMessage}</p>
-              )}
-            </section>
-          )}
+            )}
+          </section>
 
           {hasFamily && (
             <>
@@ -240,24 +261,36 @@ export default function FamilyPage() {
                   <option value="child">Child</option>
                   <option value="admin">Admin</option>
                 </select>
-                <input
-                  type="number"
-                  min={1}
-                  max={168}
-                  value={inviteHours}
-                  onChange={(e) => setInviteHours(Number(e.target.value))}
-                  className="rounded-lg border border-slate-300 px-3 py-2"
-                  placeholder="Hours"
-                />
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={inviteUses}
-                  onChange={(e) => setInviteUses(Number(e.target.value))}
-                  className="rounded-lg border border-slate-300 px-3 py-2"
-                  placeholder="Uses"
-                />
+                <div className="flex min-w-0 items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={168}
+                    value={inviteHours}
+                    onChange={(e) => setInviteHours(Number(e.target.value))}
+                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
+                    placeholder="Hours"
+                  />
+                  <InviteFieldHelp
+                    label="Invite hours"
+                    description="The invite code expires after this many hours."
+                  />
+                </div>
+                <div className="flex min-w-0 items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={inviteUses}
+                    onChange={(e) => setInviteUses(Number(e.target.value))}
+                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
+                    placeholder="Uses"
+                  />
+                  <InviteFieldHelp
+                    label="Invite uses"
+                    description="The maximum number of times this invite code can be used."
+                  />
+                </div>
                 <button className="rounded-lg bg-slate-900 px-3 py-2 font-semibold text-white disabled:opacity-60" disabled={inviteLoading}>
                   {inviteLoading ? "Generating..." : "Generate Code"}
                 </button>

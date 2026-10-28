@@ -9,6 +9,8 @@ import { supabase } from "@/lib/supabase";
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
   const [familyName, setFamilyName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [joinWithInvite, setJoinWithInvite] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,18 +23,17 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // 1. Call backend signup (creates user + family + profile)
       await apiFetch("/api/auth/signup", {
         method: "POST",
         body: JSON.stringify({
           email,
           password,
           display_name: displayName,
-          family_name: familyName,
+          family_name: joinWithInvite ? undefined : familyName,
+          invite_code: joinWithInvite ? inviteCode.trim().toUpperCase() : undefined,
         }),
       });
 
-      // 2. Sign in with Supabase client to get session
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -58,6 +59,26 @@ export default function SignupPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+            <button
+              type="button"
+              onClick={() => setJoinWithInvite(false)}
+              className={`rounded-md px-3 py-2 text-sm font-medium ${
+                !joinWithInvite ? "bg-white text-primary shadow-sm" : "text-gray-600"
+              }`}
+            >
+              Create a family
+            </button>
+            <button
+              type="button"
+              onClick={() => setJoinWithInvite(true)}
+              className={`rounded-md px-3 py-2 text-sm font-medium ${
+                joinWithInvite ? "bg-white text-primary shadow-sm" : "text-gray-600"
+              }`}
+            >
+              Join with a code
+            </button>
+          </div>
           <input
             type="text"
             placeholder="Your Name"
@@ -66,14 +87,26 @@ export default function SignupPage() {
             required
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
-          <input
-            type="text"
-            placeholder="Family Name (e.g., The Smiths)"
-            value={familyName}
-            onChange={(e) => setFamilyName(e.target.value)}
-            required
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-          />
+          {joinWithInvite ? (
+            <input
+              type="text"
+              placeholder="Family invite code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              autoCapitalize="characters"
+              required
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          ) : (
+            <input
+              type="text"
+              placeholder="Family Name (e.g., The Smiths)"
+              value={familyName}
+              onChange={(e) => setFamilyName(e.target.value)}
+              required
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          )}
           <input
             type="email"
             placeholder="Email"
@@ -101,7 +134,13 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-light transition-colors disabled:opacity-50"
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading
+              ? joinWithInvite
+                ? "Joining family..."
+                : "Creating account..."
+              : joinWithInvite
+                ? "Create Account & Join Family"
+                : "Create Account"}
           </button>
         </form>
 

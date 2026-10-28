@@ -38,9 +38,10 @@ backend/
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | /api/auth/signup | none | Register + create profile + family |
+| POST | /api/auth/signup | none | Register and create a family or join via invite code |
 | POST | /api/auth/login | none | Returns JWT |
 | POST | /api/auth/invite | admin | Invite family member |
+| POST | /api/auth/join-family | user | Join or switch families using an invite code |
 | GET | /api/family | user | Family info + members |
 | PATCH | /api/family/members/{uid} | admin | Change role |
 | DELETE | /api/family/members/{uid} | admin | Remove member |
@@ -51,6 +52,10 @@ backend/
 | POST | /api/chat | user | RAG query -> answer + sources |
 | GET | /api/chat/history | user | Past messages |
 | POST | /api/autofill | user | Field names -> matched values |
+
+Signup accepts either `family_name` to create a new family or `invite_code` to join
+an existing one. An authenticated user can also redeem an invite at
+`/api/auth/join-family`; this switches their single family membership.
 
 ## Shared contract
 

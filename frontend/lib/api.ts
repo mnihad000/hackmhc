@@ -1,5 +1,5 @@
-// The base URL for all API requests — falls back to localhost if not set in .env
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// The base URL for all API requests — falls back to the local backend if not set in .env
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 function buildApiUrl(path: string): string {
   const normalizedBase = API_URL.replace(/\/+$/, "");

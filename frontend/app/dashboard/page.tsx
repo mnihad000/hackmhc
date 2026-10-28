@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { useAuth } from "@/components/AuthProvider";
 import { apiFetch } from "@/lib/api";
 import { DashboardPayload, InviteCode } from "@/lib/types";
+import InviteFieldHelp from "@/components/InviteFieldHelp";
 
 const EMPTY_DASHBOARD: DashboardPayload = {
   urgent_deadlines: [],
@@ -318,24 +319,36 @@ export default function DashboardPage() {
                       <option value="child">Child</option>
                       <option value="admin">Admin</option>
                     </select>
-                    <input
-                      type="number"
-                      min={1}
-                      max={168}
-                      value={inviteHours}
-                      onChange={(e) => setInviteHours(Number(e.target.value))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                      placeholder="Expires in hours"
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={inviteUses}
-                      onChange={(e) => setInviteUses(Number(e.target.value))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                      placeholder="Max uses"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={168}
+                        value={inviteHours}
+                        onChange={(e) => setInviteHours(Number(e.target.value))}
+                        className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
+                        placeholder="Expires in hours"
+                      />
+                      <InviteFieldHelp
+                        label="Invite hours"
+                        description="The invite code expires after this many hours."
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={inviteUses}
+                        onChange={(e) => setInviteUses(Number(e.target.value))}
+                        className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2"
+                        placeholder="Max uses"
+                      />
+                      <InviteFieldHelp
+                        label="Invite uses"
+                        description="The maximum number of times this invite code can be used."
+                      />
+                    </div>
                     <button disabled={inviteLoading} className="rounded-lg bg-slate-900 px-3 py-2 text-white disabled:opacity-60">
                       {inviteLoading ? "Generating..." : "Generate code"}
                     </button>

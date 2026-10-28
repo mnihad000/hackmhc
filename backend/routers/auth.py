@@ -18,7 +18,8 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str
     display_name: str
-    family_name: str
+    family_name: Optional[str] = None
+    invite_code: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -78,12 +79,54 @@ def _create_invite_code_record(
     raise HTTPException(status_code=500, detail="Failed to generate invite code") from last_exc
 
 
+def _get_usable_invite(supabase, code: str) -> dict:
+    result = (
+        supabase.table("invite_codes")
+        .select("*")
+        .eq("code", code)
+        .limit(1)
+        .execute()
+    )
+    invite = (result.data or [None])[0]
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite code not found")
+    if not invite.get("is_active", False):
+        raise HTTPException(status_code=400, detail="Invite code is inactive")
+
+    expires_at = datetime.fromisoformat(invite["expires_at"].replace("Z", "+00:00"))
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invite code has expired")
+    if invite.get("used_count", 0) >= invite.get("max_uses", 1):
+        raise HTTPException(status_code=400, detail="Invite code has reached usage limit")
+    if invite.get("role") not in VALID_ROLES:
+        raise HTTPException(status_code=400, detail="Invite code has an invalid role")
+    return invite
+
+
+def _consume_invite_code(supabase, invite: dict) -> None:
+    new_used_count = invite.get("used_count", 0) + 1
+    updates = {"used_count": new_used_count}
+    if new_used_count >= invite.get("max_uses", 1):
+        updates["is_active"] = False
+    supabase.table("invite_codes").update(updates).eq("id", invite["id"]).execute()
+
+
 @router.post("/signup")
 async def signup(req: SignupRequest):
     """Register a new user, create a family, and set up their profile."""
     supabase = get_supabase()
     email = str(req.email).strip().lower()
     password = req.password.strip()
+    invite_code = (req.invite_code or "").strip().upper()
+    family_name = (req.family_name or "").strip()
+
+    if bool(invite_code) == bool(family_name):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either a family name or an invite code.",
+        )
+
+    invite = _get_usable_invite(supabase, invite_code) if invite_code else None
 
     try:
         auth_response = supabase.auth.admin.create_user(
@@ -101,22 +144,33 @@ async def signup(req: SignupRequest):
 
     user_id = auth_response.user.id
 
-    family_result = supabase.table("families").insert({"name": req.family_name}).execute()
-    family_id = family_result.data[0]["id"]
+    if invite:
+        family_id = invite["family_id"]
+        role = invite["role"]
+    else:
+        family_result = supabase.table("families").insert({"name": family_name}).execute()
+        family_id = family_result.data[0]["id"]
+        role = "admin"
 
     supabase.table("profiles").insert(
         {
             "id": user_id,
             "family_id": family_id,
             "display_name": req.display_name,
-            "role": "admin",
+            "role": role,
         }
     ).execute()
+    if invite:
+        _consume_invite_code(supabase, invite)
 
     return {
         "user_id": user_id,
         "family_id": family_id,
-        "message": "Account created successfully",
+        "message": (
+            "Account created and joined family successfully"
+            if invite
+            else "Account created successfully"
+        ),
     }
 
 
@@ -206,51 +260,19 @@ async def list_invite_codes(user: dict = Depends(require_member_or_admin)):
 
 @router.post("/join-family")
 async def join_family_with_code(req: JoinFamilyRequest, user: dict = Depends(get_current_user)):
-    """Redeem an invite code and join a family."""
+    """Redeem an invite code and join or switch to its family."""
     supabase = get_supabase()
 
-    current_profile = (
-        supabase.table("profiles")
-        .select("family_id")
-        .eq("id", user["user_id"])
-        .single()
-        .execute()
-    )
-    if not current_profile.data:
-        raise HTTPException(status_code=404, detail="User profile not found")
-    if current_profile.data.get("family_id"):
-        raise HTTPException(
-            status_code=409,
-            detail="You are already in a family. Leave current family before joining another.",
-        )
-
     code = req.code.strip().upper()
-    invite_result = supabase.table("invite_codes").select("*").eq("code", code).single().execute()
-    invite = invite_result.data
-    if not invite:
-        raise HTTPException(status_code=404, detail="Invite code not found")
-
-    if not invite.get("is_active", False):
-        raise HTTPException(status_code=400, detail="Invite code is inactive")
-
-    expires_at = datetime.fromisoformat(invite["expires_at"].replace("Z", "+00:00"))
-    if expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="Invite code has expired")
-
-    used_count = invite.get("used_count", 0)
-    max_uses = invite.get("max_uses", 1)
-    if used_count >= max_uses:
-        raise HTTPException(status_code=400, detail="Invite code has reached usage limit")
+    invite = _get_usable_invite(supabase, code)
+    if user.get("family_id") == invite["family_id"]:
+        raise HTTPException(status_code=409, detail="You are already a member of this family.")
 
     supabase.table("profiles").update(
         {"family_id": invite["family_id"], "role": invite["role"]}
     ).eq("id", user["user_id"]).execute()
 
-    new_used_count = used_count + 1
-    updates = {"used_count": new_used_count}
-    if new_used_count >= max_uses:
-        updates["is_active"] = False
-    supabase.table("invite_codes").update(updates).eq("id", invite["id"]).execute()
+    _consume_invite_code(supabase, invite)
 
     return {
         "message": "Joined family successfully",
